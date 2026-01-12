@@ -127,8 +127,16 @@ export async function POST(req: Request) {
 
     const envAdminEmail = process.env.ADMIN_LOGIN;
     const envAdminPassword = process.env.ADMIN_PASSWORD;
+    console.log('[LOGIN] Admin bypass check:', {
+      hasEnvAdmin: !!envAdminEmail,
+      hasEnvPassword: !!envAdminPassword,
+      emailMatches: email === envAdminEmail,
+      attemptedEmail: email
+    });
     if (envAdminEmail && envAdminPassword && email === envAdminEmail) {
+      console.log('[LOGIN] Admin bypass - checking password');
       if (password !== envAdminPassword) {
+        console.log('[LOGIN] Admin bypass - password mismatch');
         return NextResponse.redirect(new URL('/login?message=Identifiants+invalides', req.url));
       }
 
