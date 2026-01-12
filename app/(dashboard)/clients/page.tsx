@@ -1,10 +1,13 @@
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getCsrfToken } from '@/lib/csrf';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CsrfInput } from '@/components/csrf-input';
+import crypto from 'crypto';
 
 export default async function ClientsPage({
   searchParams
@@ -25,6 +28,60 @@ export default async function ClientsPage({
   const activeTenantId = searchParams.tenantId ?? tenants[0]?.id;
   const activeTenant = tenants.find((tenant) => tenant.id === activeTenantId);
 
+  async function createTenant(formData: FormData) {
+    'use server';
+
+    const session = await requireSession();
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (!currentUser || currentUser.role === 'client') {
+      redirect('/posts');
+    }
+
+    const name = formData.get('name')?.toString();
+    if (!name || name.trim().length < 2) {
+      redirect('/clients?error=name_required');
+    }
+
+    const formToken = formData.get('csrf_token')?.toString();
+    const cookieToken = await getCsrfToken();
+    if (!formToken || !cookieToken || !crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(formToken))) {
+      redirect('/clients?error=csrf');
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const created = await tx.tenant.create({
+        data: { name: name.trim() }
+      });
+
+      await tx.tenantMembership.create({
+        data: {
+          tenantId: created.id,
+          userId: session.userId,
+          role: 'client_admin'
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId: created.id,
+          action: 'tenant.create',
+          entityType: 'tenant',
+          entityId: created.id,
+          payload: { name: created.name, userId: session.userId }
+        }
+      });
+
+    });
+
+    revalidatePath('/clients');
+    revalidatePath('/posts');
+    return;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -41,7 +98,7 @@ export default async function ClientsPage({
             <CardTitle>Nouveau client</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form action="/api/tenants" method="post" className="space-y-3">
+            <form action={createTenant} className="space-y-3">
               <CsrfInput />
               <Input name="name" placeholder="Nom du client" required />
               <Button type="submit">Creer</Button>
