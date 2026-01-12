@@ -2,22 +2,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CsrfInput } from '@/components/csrf-input';
+import { LoginMessage } from '@/components/login-message';
 
 export const dynamic = 'force-dynamic';
 
-export default function LoginPage({
-  searchParams
-}: {
-  searchParams: { message?: string };
-}) {
+export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f4efe8,_#f7e9d8,_#f0d9bf)] px-6 py-16">
       <div className="mx-auto max-w-4xl space-y-6">
-        {searchParams.message && (
-          <div className="rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground">
-            {searchParams.message}
-          </div>
-        )}
+        <LoginMessage />
         <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
