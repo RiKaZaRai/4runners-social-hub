@@ -100,7 +100,7 @@ export async function PATCH(req: Request) {
     }
 
     // Validate status is a valid enum value
-    const validStatuses = ['backlog', 'approved', 'rejected'];
+    const validStatuses = ['new', 'accepted', 'declined', 'converted'];
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
     }
@@ -117,7 +117,7 @@ export async function PATCH(req: Request) {
     const idea = await prisma.$transaction(async (tx) => {
       const updatedIdea = await tx.idea.update({
         where: { id },
-        data: { status: status as 'backlog' | 'approved' | 'rejected' }
+        data: { status: status as 'new' | 'accepted' | 'declined' | 'converted' }
       });
 
       await tx.auditLog.create({
