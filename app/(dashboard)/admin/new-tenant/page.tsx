@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Prisma } from '@prisma/client';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default async function NewTenantPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  name_required: 'Veuillez renseigner un nom de client.',
+  unauthorized: 'Acces refuse.',
+  duplicate: 'Un client avec ce nom existe deja.',
+  creation_failed: 'Impossible de creer le client pour le moment.'
+};
+
+export default async function NewTenantPage({
+  searchParams
+}: {
+  searchParams?: { error?: string };
+}) {
   const session = await requireSession();
 
   // Verify user is agency_admin
@@ -22,6 +34,16 @@ export default async function NewTenantPage() {
 
   async function createTenant(formData: FormData) {
     'use server';
+
+    const session = await requireSession();
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (user?.role !== 'agency_admin') {
+      redirect('/select-tenant?error=unauthorized');
+    }
 
     const name = formData.get('name') as string;
 
@@ -49,6 +71,9 @@ export default async function NewTenantPage() {
       redirect(`/admin/${tenant.id}`);
     } catch (error) {
       console.error('Error creating tenant:', error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        redirect('/admin/new-tenant?error=duplicate');
+      }
       redirect('/admin/new-tenant?error=creation_failed');
     }
   }
@@ -77,6 +102,11 @@ export default async function NewTenantPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {searchParams?.error && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {ERROR_MESSAGES[searchParams.error] ?? ERROR_MESSAGES.creation_failed}
+              </div>
+            )}
             <form action={createTenant} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nom du client</Label>
