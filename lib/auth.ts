@@ -15,7 +15,8 @@ export async function createSession(userId: string) {
     }
   });
 
-  cookies().set(SESSION_COOKIE, session.token, {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, session.token, {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
@@ -26,15 +27,17 @@ export async function createSession(userId: string) {
 }
 
 export async function destroySession() {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (token) {
     await prisma.session.deleteMany({ where: { token } });
   }
-  cookies().delete(SESSION_COOKIE);
+  cookieStore.delete(SESSION_COOKIE);
 }
 
 export async function getSession() {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const session = await prisma.session.findFirst({
     where: { token, expiresAt: { gt: new Date() } },
