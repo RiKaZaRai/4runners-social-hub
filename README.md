@@ -43,3 +43,9 @@ pnpm worker
 - Auth simple (password ou token client). Magic link dev via formulaire.
 - Jobs BullMQ: publish, delete_remote, sync_comments (placeholder).
 - Upload media via API server (MinIO interne). Les assets sont servis via `/api/assets/:id`.
+
+## Deploiement Dokploy (Docker Compose)
+
+- Utiliser `docker-compose.prod.yml` pour un stack tout-in-one.
+- Configurer le service `app` avec le domaine `octopus.digital-jungle.fr`.
+- Lancer apres deploy: `pnpm prisma migrate deploy` (et `pnpm prisma:seed` une seule fois).

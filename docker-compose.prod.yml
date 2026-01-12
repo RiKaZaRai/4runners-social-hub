@@ -1,0 +1,74 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    command: pnpm start
+    environment:
+      NODE_ENV: production
+      APP_URL: "https://octopus.digital-jungle.fr"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/fourunners"
+      REDIS_URL: "redis://redis:6379"
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: "minioadmin"
+      MINIO_SECRET_KEY: "minioadmin"
+      MINIO_BUCKET: "4runners-media"
+      MINIO_REGION: "us-east-1"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    ports:
+      - '3000:3000'
+
+  worker:
+    build: .
+    command: pnpm worker
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/fourunners"
+      REDIS_URL: "redis://redis:6379"
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: "minioadmin"
+      MINIO_SECRET_KEY: "minioadmin"
+      MINIO_BUCKET: "4runners-media"
+      MINIO_REGION: "us-east-1"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fourunners
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb -p local/4runners-media || true
+      "
+
+volumes:
+  postgres_data:
+  minio_data:
