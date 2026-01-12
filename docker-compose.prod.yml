@@ -27,6 +27,9 @@ services:
         condition: service_completed_successfully
     ports:
       - '3000:3000'
+    networks:
+      - dokploy-network
+      - internal
 
   worker:
     container_name: social-hub-worker
@@ -52,6 +55,8 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+    networks:
+      - internal
 
   postgres:
     container_name: social-hub-postgres
@@ -69,6 +74,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
 
   redis:
     container_name: social-hub-redis
@@ -82,6 +89,8 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
+    networks:
+      - internal
 
   minio:
     container_name: social-hub-minio
@@ -98,6 +107,8 @@ services:
       interval: 20s
       timeout: 5s
       retries: 10
+    networks:
+      - internal
 
   minio-init:
     container_name: social-hub-minio-init
@@ -111,8 +122,16 @@ services:
       mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
       mc mb -p local/${MINIO_BUCKET} || true
       "
+    networks:
+      - internal
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+
+networks:
+  dokploy-network:
+    external: true
+  internal:
+    driver: bridge
