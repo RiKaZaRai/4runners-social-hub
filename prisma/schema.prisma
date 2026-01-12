@@ -44,7 +44,7 @@ enum JobStatus {
 
 model Tenant {
   id          String             @id @default(uuid())
-  name        String
+  name        String             @unique
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   memberships TenantMembership[]
