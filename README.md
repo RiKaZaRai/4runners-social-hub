@@ -51,6 +51,12 @@ pnpm worker
 - Configurer le service `app` avec le domaine `octopus.digital-jungle.fr`.
 - Lancer apres deploy: `pnpm prisma:seed` une seule fois (les migrations sont lancees au boot de `app`).
 
+Generer des secrets (recommande):
+
+```bash
+./scripts/generate-secrets.sh
+```
+
 Variables recommandees (Dokploy secrets):
 
 ```
