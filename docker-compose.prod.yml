@@ -2,6 +2,7 @@ version: '3.9'
 
 services:
   app:
+    container_name: social-hub-app
     build: .
     restart: unless-stopped
     command: ["sh", "-lc", "pnpm prisma migrate deploy && pnpm start"]
@@ -28,6 +29,7 @@ services:
       - '3000:3000'
 
   worker:
+    container_name: social-hub-worker
     build: .
     restart: unless-stopped
     command: pnpm worker
@@ -52,6 +54,7 @@ services:
         condition: service_completed_successfully
 
   postgres:
+    container_name: social-hub-postgres
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -68,6 +71,7 @@ services:
       retries: 5
 
   redis:
+    container_name: social-hub-redis
     image: redis:7-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -80,6 +84,7 @@ services:
       retries: 10
 
   minio:
+    container_name: social-hub-minio
     image: minio/minio:latest
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
@@ -95,6 +100,7 @@ services:
       retries: 10
 
   minio-init:
+    container_name: social-hub-minio-init
     image: minio/mc:latest
     restart: "no"
     depends_on:

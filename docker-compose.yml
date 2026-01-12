@@ -3,7 +3,7 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16
-    container_name: 4runners-postgres
+    container_name: social-hub-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -15,13 +15,13 @@ services:
 
   redis:
     image: redis:7
-    container_name: 4runners-redis
+    container_name: social-hub-redis
     ports:
       - '6379:6379'
 
   minio:
     image: minio/minio:latest
-    container_name: 4runners-minio
+    container_name: social-hub-minio
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
