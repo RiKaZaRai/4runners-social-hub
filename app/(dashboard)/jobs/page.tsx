@@ -15,7 +15,21 @@ export default async function JobsPage() {
   if (!currentUser || currentUser.role === 'client') {
     redirect('/posts');
   }
+
+  // Get user's tenant memberships for filtering
+  const memberships = await prisma.tenantMembership.findMany({
+    where: { userId: session.userId },
+    select: { tenantId: true }
+  });
+  const tenantIds = memberships.map(m => m.tenantId);
+
+  // Only fetch jobs for tenants the user has access to
   const jobs = await prisma.outboxJob.findMany({
+    where: {
+      tenantId: {
+        in: tenantIds
+      }
+    },
     orderBy: { createdAt: 'desc' },
     take: 50
   });

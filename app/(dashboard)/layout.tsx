@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
+import { CsrfInput } from '@/components/csrf-input';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession();
@@ -24,6 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <h1 className="text-lg font-semibold">Social Hub</h1>
           </div>
           <form action="/api/auth/logout" method="post">
+            <CsrfInput />
             <Button variant="outline" size="sm">Se deconnecter</Button>
           </form>
         </div>

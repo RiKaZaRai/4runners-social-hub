@@ -4,12 +4,16 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/db';
 import { createSession } from '@/lib/auth';
 import { requireRateLimit, getClientIdentifier } from '@/lib/rate-limit';
+import { requireCsrfToken } from '@/lib/csrf';
 
 export async function POST(req: Request) {
   try {
     // Rate limiting for auth endpoints (stricter)
     const clientId = getClientIdentifier(req);
     await requireRateLimit(clientId, 'auth');
+
+    // CSRF protection for all login forms
+    await requireCsrfToken(req);
 
     const form = await req.formData();
     const requestMagic = form.get('requestMagic')?.toString() === '1';
@@ -199,10 +203,17 @@ export async function POST(req: Request) {
 
     return NextResponse.redirect(new URL('/select-tenant', req.url));
   } catch (error) {
-    if (error instanceof Error && error.message === 'RATE_LIMIT_EXCEEDED') {
-      return NextResponse.redirect(
-        new URL('/login?message=Trop+de+tentatives.+Réessayez+plus+tard', req.url)
-      );
+    if (error instanceof Error) {
+      if (error.message === 'RATE_LIMIT_EXCEEDED') {
+        return NextResponse.redirect(
+          new URL('/login?message=Trop+de+tentatives.+Réessayez+plus+tard', req.url)
+        );
+      }
+      if (error.message === 'CSRF_INVALID') {
+        return NextResponse.redirect(
+          new URL('/login?message=Token+de+sécurité+invalide.+Veuillez+réessayer', req.url)
+        );
+      }
     }
 
     console.error('Login error:', error);
