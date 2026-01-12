@@ -358,7 +358,7 @@ export default async function PostsPage({
                       {selectedPost.checklist.map((item) => (
                         <div key={item.id} className="flex items-center justify-between text-sm">
                           <span>{item.label}</span>
-                          <Badge variant={item.checked ? 'secondary' : 'outline'}>
+                          <Badge variant={item.checked ? 'accent' : 'outline'}>
                             {item.checked ? 'OK' : 'TODO'}
                           </Badge>
                         </div>
