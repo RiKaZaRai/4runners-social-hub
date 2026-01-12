@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CsrfInput } from '@/components/csrf-input';
 import crypto from 'crypto';
+import { TenantDeleteButton } from '@/components/tenant-delete-button';
 
 export default async function ClientsPage({
   searchParams
@@ -82,6 +83,62 @@ export default async function ClientsPage({
     return;
   }
 
+  async function deleteTenant(tenantId: string) {
+    'use server';
+
+    const session = await requireSession();
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (!currentUser || currentUser.role === 'client') {
+      redirect('/posts');
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.comment.deleteMany({
+        where: { post: { tenantId } }
+      });
+      await tx.checklistItem.deleteMany({
+        where: { post: { tenantId } }
+      });
+      await tx.postVersion.deleteMany({
+        where: { post: { tenantId } }
+      });
+      await tx.postChannel.deleteMany({
+        where: { post: { tenantId } }
+      });
+      await tx.asset.deleteMany({
+        where: { tenantId }
+      });
+      await tx.post.deleteMany({
+        where: { tenantId }
+      });
+      await tx.idea.deleteMany({
+        where: { tenantId }
+      });
+      await tx.tenantChannel.deleteMany({
+        where: { tenantId }
+      });
+      await tx.outboxJob.deleteMany({
+        where: { tenantId }
+      });
+      await tx.auditLog.deleteMany({
+        where: { tenantId }
+      });
+      await tx.tenantMembership.deleteMany({
+        where: { tenantId }
+      });
+      await tx.tenant.delete({
+        where: { id: tenantId }
+      });
+    });
+
+    revalidatePath('/clients');
+    revalidatePath('/posts');
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -105,15 +162,24 @@ export default async function ClientsPage({
             </form>
             <div className="space-y-2 text-sm">
               {tenants.map((tenant) => (
-                <a
+                <div
                   key={tenant.id}
-                  href={`/clients?tenantId=${tenant.id}`}
-                  className={`block rounded-md border px-3 py-2 transition hover:bg-muted ${
-                    tenant.id === activeTenantId ? 'bg-muted/70' : ''
+                  className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 transition ${
+                    tenant.id === activeTenantId ? 'bg-muted/70' : 'hover:bg-muted'
                   }`}
                 >
-                  {tenant.name}
-                </a>
+                  <a
+                    href={`/clients?tenantId=${tenant.id}`}
+                    className="min-w-0 flex-1 truncate text-sm"
+                  >
+                    {tenant.name}
+                  </a>
+                  <TenantDeleteButton
+                    tenantId={tenant.id}
+                    tenantName={tenant.name}
+                    onDelete={deleteTenant}
+                  />
+                </div>
               ))}
               {tenants.length === 0 && (
                 <p className="text-muted-foreground">Aucun client pour le moment.</p>
