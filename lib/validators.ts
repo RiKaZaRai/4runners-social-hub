@@ -40,12 +40,6 @@ export const ideaSchema = z.object({
   description: z.string().optional()
 });
 
-export const presignSchema = z.object({
-  tenantId: z.string().uuid(),
-  filename: z.string().min(1),
-  contentType: z.string().min(1)
-});
-
 export const enqueueJobSchema = z.object({
   postId: z.string().uuid(),
   channelId: z.string().uuid()

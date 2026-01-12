@@ -42,4 +42,4 @@ pnpm worker
 
 - Auth simple (password ou token client). Magic link dev via formulaire.
 - Jobs BullMQ: publish, delete_remote, sync_comments (placeholder).
-- Upload media via presigned URL MinIO.
+- Upload media via API server (MinIO interne). Les assets sont servis via `/api/assets/:id`.

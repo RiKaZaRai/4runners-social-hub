@@ -101,12 +101,11 @@ export default async function PostDetailPage({
               </a>
             </div>
           ))}
-          <form action="/api/assets/presign" method="post" className="mt-3 flex gap-2">
-            <Input type="text" name="filename" placeholder="media.png" required />
-            <Input type="text" name="contentType" placeholder="image/png" required />
+          <form action="/api/assets/upload" method="post" encType="multipart/form-data" className="mt-3 flex gap-2">
+            <Input type="file" name="file" required />
             <input type="hidden" name="tenantId" value={tenantId} />
             <input type="hidden" name="postId" value={post.id} />
-            <Button type="submit" size="sm">Presigner</Button>
+            <Button type="submit" size="sm">Uploader</Button>
           </form>
         </CardContent>
       </Card>
