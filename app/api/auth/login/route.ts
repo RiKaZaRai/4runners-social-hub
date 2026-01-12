@@ -6,6 +6,12 @@ import { createSession } from '@/lib/auth';
 import { requireRateLimit, getClientIdentifier } from '@/lib/rate-limit';
 import { requireCsrfToken } from '@/lib/csrf';
 
+// Helper function to create redirect URLs with correct domain
+function redirectUrl(path: string): string {
+  const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+  return `${baseUrl}${path}`;
+}
+
 export async function POST(req: Request) {
   try {
     // Rate limiting for auth endpoints (stricter)
@@ -21,13 +27,13 @@ export async function POST(req: Request) {
     if (requestMagic) {
       const email = form.get('magicEmail')?.toString();
       if (!email) {
-        return NextResponse.redirect(new URL('/login?message=Email+manquant', req.url));
+        return NextResponse.redirect(redirectUrl('/login?message=Email+manquant'));
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return NextResponse.redirect(new URL('/login?message=Email+invalide', req.url));
+        return NextResponse.redirect(redirectUrl('/login?message=Email+invalide'));
       }
 
       // Check if user exists
@@ -35,7 +41,7 @@ export async function POST(req: Request) {
       if (!user) {
         // Don't reveal if email exists or not (security best practice)
         return NextResponse.redirect(
-          new URL('/login?message=Si+l\'email+existe,+un+lien+magique+sera+envoyé', req.url)
+          redirectUrl('/login?message=Si+l\'email+existe,+un+lien+magique+sera+envoyé')
         );
       }
 
@@ -56,7 +62,7 @@ export async function POST(req: Request) {
 
       // Don't expose the token in the URL
       return NextResponse.redirect(
-        new URL('/login?message=Un+lien+magique+a+été+envoyé+à+votre+email', req.url)
+        redirectUrl('/login?message=Un+lien+magique+a+été+envoyé+à+votre+email')
       );
     }
 
@@ -64,7 +70,7 @@ export async function POST(req: Request) {
     if (accessToken) {
       const user = await prisma.user.findUnique({ where: { accessToken } });
       if (!user) {
-        return NextResponse.redirect(new URL('/login?message=Token+invalide', req.url));
+        return NextResponse.redirect(redirectUrl('/login?message=Token+invalide'));
       }
 
       await createSession(user.id);
@@ -72,7 +78,7 @@ export async function POST(req: Request) {
       // Clean up old magic link tokens for this user
       await prisma.magicLinkToken.deleteMany({ where: { email: user.email } });
 
-      return NextResponse.redirect(new URL('/select-tenant', req.url));
+      return NextResponse.redirect(redirectUrl('/select-tenant'));
     }
 
     const email = form.get('email')?.toString();
@@ -86,13 +92,13 @@ export async function POST(req: Request) {
 
       if (!tokenRow) {
         return NextResponse.redirect(
-          new URL('/login?message=Magic+token+invalide+ou+expiré', req.url)
+          redirectUrl('/login?message=Magic+token+invalide+ou+expiré')
         );
       }
 
       const user = await prisma.user.findUnique({ where: { email: tokenRow.email } });
       if (!user) {
-        return NextResponse.redirect(new URL('/login?message=Utilisateur+introuvable', req.url));
+        return NextResponse.redirect(redirectUrl('/login?message=Utilisateur+introuvable'));
       }
 
       // Delete the used magic link token (one-time use)
@@ -116,18 +122,18 @@ export async function POST(req: Request) {
         }
       });
 
-      return NextResponse.redirect(new URL('/select-tenant', req.url));
+      return NextResponse.redirect(redirectUrl('/select-tenant'));
     }
 
     if (!email || !password) {
-      return NextResponse.redirect(new URL('/login?message=Champs+incomplets', req.url));
+      return NextResponse.redirect(redirectUrl('/login?message=Champs+incomplets'));
     }
 
     const envAdminEmail = process.env.ADMIN_LOGIN;
     const envAdminPassword = process.env.ADMIN_PASSWORD;
     if (envAdminEmail && envAdminPassword && email === envAdminEmail) {
       if (password !== envAdminPassword) {
-        return NextResponse.redirect(new URL('/login?message=Identifiants+invalides', req.url));
+        return NextResponse.redirect(redirectUrl('/login?message=Identifiants+invalides'));
       }
 
       const adminUser = await prisma.user.upsert({
@@ -154,19 +160,19 @@ export async function POST(req: Request) {
         });
       }
 
-      return NextResponse.redirect(new URL('/select-tenant', req.url));
+      return NextResponse.redirect(redirectUrl('/select-tenant'));
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.redirect(new URL('/login?message=Email+invalide', req.url));
+      return NextResponse.redirect(redirectUrl('/login?message=Email+invalide'));
     }
 
     // Validate password requirements
     if (password.length < 8) {
       return NextResponse.redirect(
-        new URL('/login?message=Le+mot+de+passe+doit+contenir+au+moins+8+caractères', req.url)
+        redirectUrl('/login?message=Le+mot+de+passe+doit+contenir+au+moins+8+caractères')
       );
     }
 
@@ -175,12 +181,12 @@ export async function POST(req: Request) {
       // Use timing-safe comparison to prevent timing attacks
       // Hash a dummy password even if user doesn't exist
       await bcrypt.compare(password, '$2a$10$dummyhashtopreventtimingattack');
-      return NextResponse.redirect(new URL('/login?message=Identifiants+invalides', req.url));
+      return NextResponse.redirect(redirectUrl('/login?message=Identifiants+invalides'));
     }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
-      return NextResponse.redirect(new URL('/login?message=Identifiants+invalides', req.url));
+      return NextResponse.redirect(redirectUrl('/login?message=Identifiants+invalides'));
     }
 
     await createSession(user.id);
@@ -201,22 +207,22 @@ export async function POST(req: Request) {
       }
     });
 
-    return NextResponse.redirect(new URL('/select-tenant', req.url));
+    return NextResponse.redirect(redirectUrl('/select-tenant'));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === 'RATE_LIMIT_EXCEEDED') {
         return NextResponse.redirect(
-          new URL('/login?message=Trop+de+tentatives.+Réessayez+plus+tard', req.url)
+          redirectUrl('/login?message=Trop+de+tentatives.+Réessayez+plus+tard')
         );
       }
       if (error.message === 'CSRF_INVALID') {
         return NextResponse.redirect(
-          new URL('/login?message=Token+de+sécurité+invalide.+Veuillez+réessayer', req.url)
+          redirectUrl('/login?message=Token+de+sécurité+invalide.+Veuillez+réessayer')
         );
       }
     }
 
     console.error('Login error:', error);
-    return NextResponse.redirect(new URL('/login?message=Erreur+serveur', req.url));
+    return NextResponse.redirect(redirectUrl('/login?message=Erreur+serveur'));
   }
 }
