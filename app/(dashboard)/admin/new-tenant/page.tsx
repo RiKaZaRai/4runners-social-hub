@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -18,7 +19,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 export default async function NewTenantPage({
   searchParams
 }: {
-  searchParams?: { error?: string };
+  searchParams?: { error?: string; success?: string };
 }) {
   const session = await requireSession();
 
@@ -68,7 +69,10 @@ export default async function NewTenantPage({
         return created;
       });
 
-      redirect(`/admin/${tenant.id}`);
+      revalidatePath('/admin/new-tenant');
+      revalidatePath('/clients');
+      revalidatePath('/posts');
+      redirect('/admin/new-tenant?success=1');
     } catch (error) {
       console.error('Error creating tenant:', error);
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -102,6 +106,11 @@ export default async function NewTenantPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {searchParams?.success && !searchParams?.error && (
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
+                Client cree. La liste se met a jour automatiquement.
+              </div>
+            )}
             {searchParams?.error && (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {ERROR_MESSAGES[searchParams.error] ?? ERROR_MESSAGES.creation_failed}
