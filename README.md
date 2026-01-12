@@ -43,6 +43,7 @@ pnpm worker
 - Auth simple (password ou token client). Magic link dev via formulaire.
 - Jobs BullMQ: publish, delete_remote, sync_comments (placeholder).
 - Upload media via API server (MinIO interne). Les assets sont servis via `/api/assets/:id`.
+- Option admin d'agence via `ADMIN_LOGIN` / `ADMIN_PASSWORD` (override).
 
 ## Deploiement Dokploy (Docker Compose)
 

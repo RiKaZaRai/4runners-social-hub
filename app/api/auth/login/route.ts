@@ -119,6 +119,40 @@ export async function POST(req: Request) {
       return NextResponse.redirect(new URL('/login?message=Champs+incomplets', req.url));
     }
 
+    const envAdminEmail = process.env.ADMIN_LOGIN;
+    const envAdminPassword = process.env.ADMIN_PASSWORD;
+    if (envAdminEmail && envAdminPassword && email === envAdminEmail) {
+      if (password !== envAdminPassword) {
+        return NextResponse.redirect(new URL('/login?message=Identifiants+invalides', req.url));
+      }
+
+      const adminUser = await prisma.user.upsert({
+        where: { email: envAdminEmail },
+        update: { role: 'agency_admin' },
+        create: {
+          email: envAdminEmail,
+          name: 'Admin Agence',
+          role: 'agency_admin'
+        }
+      });
+
+      await createSession(adminUser.id);
+
+      // Ensure the admin can access all tenants
+      const tenants = await prisma.tenant.findMany({ select: { id: true } });
+      if (tenants.length > 0) {
+        await prisma.tenantMembership.createMany({
+          data: tenants.map((tenant) => ({
+            tenantId: tenant.id,
+            userId: adminUser.id
+          })),
+          skipDuplicates: true
+        });
+      }
+
+      return NextResponse.redirect(new URL('/select-tenant', req.url));
+    }
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
