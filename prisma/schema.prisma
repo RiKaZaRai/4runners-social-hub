@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  agency_admin
+  agency_user
+  client
+}
+
+enum PostStatus {
+  draft
+  pending_client
+  changes_requested
+  approved
+  scheduled
+  published
+  archived
+}
+
+enum IdeaStatus {
+  new
+  accepted
+  declined
+  converted
+}
+
+enum CommentRole {
+  agency
+  client
+}
+
+enum JobStatus {
+  queued
+  processing
+  failed
+  completed
+}
+
+model Tenant {
+  id          String             @id @default(uuid())
+  name        String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  memberships TenantMembership[]
+  posts       Post[]
+  ideas       Idea[]
+  assets      Asset[]
+  outboxJobs  OutboxJob[]
+  auditLogs   AuditLog[]
+}
+
+model User {
+  id            String             @id @default(uuid())
+  email         String             @unique
+  name          String?
+  role          Role               @default(agency_user)
+  passwordHash  String?
+  accessToken   String?             @unique
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  sessions      Session[]
+  memberships   TenantMembership[]
+  postsCreated  Post[]              @relation("posts_created")
+  postsUpdated  Post[]              @relation("posts_updated")
+  assets        Asset[]
+  auditLogs     AuditLog[]
+  magicLinks    MagicLinkToken[]
+}
+
+model TenantMembership {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, userId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model MagicLinkToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  email     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id            String          @id @default(uuid())
+  tenantId      String
+  title         String
+  body          String
+  status        PostStatus      @default(draft)
+  scheduledAt   DateTime?
+  publishedAt   DateTime?
+  archivedAt    DateTime?
+  createdById   String?
+  updatedById   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  tenant      Tenant         @relation(fields: [tenantId], references: [id])
+  createdBy   User?          @relation("posts_created", fields: [createdById], references: [id])
+  updatedBy   User?          @relation("posts_updated", fields: [updatedById], references: [id])
+  versions    PostVersion[]
+  channels    PostChannel[]
+  checklist   ChecklistItem[]
+  comments    Comment[]
+  assets      Asset[]
+
+  @@index([tenantId, status])
+}
+
+model PostVersion {
+  id        String   @id @default(uuid())
+  postId    String
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  post Post @relation(fields: [postId], references: [id])
+}
+
+model PostChannel {
+  id             String   @id @default(uuid())
+  postId         String
+  provider       String
+  idempotencyKey String
+  remoteId       String?
+  remoteUrl      String?
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  post Post @relation(fields: [postId], references: [id])
+
+  @@unique([provider, idempotencyKey])
+}
+
+model ChecklistItem {
+  id        String   @id @default(uuid())
+  postId    String
+  label     String
+  checked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post Post @relation(fields: [postId], references: [id])
+}
+
+model Comment {
+  id         String      @id @default(uuid())
+  postId     String
+  body       String
+  authorRole CommentRole
+  createdAt  DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id])
+}
+
+model Idea {
+  id              String     @id @default(uuid())
+  tenantId        String
+  title           String
+  description     String?
+  status          IdeaStatus @default(new)
+  convertedPostId String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+}
+
+model Asset {
+  id          String   @id @default(uuid())
+  tenantId    String
+  postId      String?
+  key         String
+  url         String
+  contentType String
+  size        Int
+  uploadedBy  String?
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  post   Post?  @relation(fields: [postId], references: [id])
+  user   User?  @relation(fields: [uploadedBy], references: [id])
+
+  @@index([tenantId])
+}
+
+model OutboxJob {
+  id         String    @id @default(uuid())
+  tenantId   String
+  type       String
+  payload    Json
+  status     JobStatus @default(queued)
+  attempts   Int       @default(0)
+  lastError  String?
+  nextRunAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  actor  User?  @relation(fields: [actorId], references: [id])
+}
