@@ -13,9 +13,7 @@ export async function POST(req: Request) {
     await requireRateLimit(clientId, 'auth');
 
     // CSRF protection for all login forms
-    // TEMPORARILY DISABLED FOR DEBUGGING
-    // await requireCsrfToken(req);
-    console.log('[LOGIN] Login attempt received');
+    await requireCsrfToken(req);
 
     const form = await req.formData();
     const requestMagic = form.get('requestMagic')?.toString() === '1';
@@ -127,24 +125,8 @@ export async function POST(req: Request) {
 
     const envAdminEmail = process.env.ADMIN_LOGIN;
     const envAdminPassword = process.env.ADMIN_PASSWORD;
-    console.log('[LOGIN] Admin bypass check:', {
-      hasEnvAdmin: !!envAdminEmail,
-      hasEnvPassword: !!envAdminPassword,
-      emailMatches: email === envAdminEmail,
-      attemptedEmail: email
-    });
     if (envAdminEmail && envAdminPassword && email === envAdminEmail) {
-      console.log('[LOGIN] Admin bypass - checking password');
-      console.log('[LOGIN] Password comparison:', {
-        receivedLength: password.length,
-        expectedLength: envAdminPassword.length,
-        receivedFirst5: password.substring(0, 5),
-        expectedFirst5: envAdminPassword.substring(0, 5),
-        receivedLast5: password.substring(password.length - 5),
-        expectedLast5: envAdminPassword.substring(envAdminPassword.length - 5)
-      });
       if (password !== envAdminPassword) {
-        console.log('[LOGIN] Admin bypass - password mismatch');
         return NextResponse.redirect(new URL('/login?message=Identifiants+invalides', req.url));
       }
 
