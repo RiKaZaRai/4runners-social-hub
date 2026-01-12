@@ -28,7 +28,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
       memberships: {
         include: {
           user: {
-            select: { id: true, name: true, email: true, role: true }
+            select: { id: true, name: true, email: true, role: true, firstName: true, lastName: true }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -42,7 +42,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
 
   // Get all users to add them as members
   const allUsers = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, email: true, role: true, firstName: true, lastName: true },
     orderBy: { email: 'asc' }
   });
 
@@ -159,7 +159,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
                     <option value="">Sélectionnez un utilisateur</option>
                     {availableUsers.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {user.name || user.email} ({user.email})
+                        {[user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || user.email} ({user.email})
                       </option>
                     ))}
                   </select>
@@ -207,7 +207,9 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">
-                          {membership.user.name || membership.user.email}
+                          {[membership.user.firstName, membership.user.lastName].filter(Boolean).join(' ') ||
+                            membership.user.name ||
+                            membership.user.email}
                         </p>
                         <Badge variant="outline">{membership.user.role}</Badge>
                       </div>

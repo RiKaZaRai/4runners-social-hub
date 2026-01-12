@@ -26,7 +26,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
       memberships: {
         include: {
           user: {
-            select: { id: true, name: true, email: true, role: true }
+            select: { id: true, name: true, email: true, role: true, firstName: true, lastName: true }
           }
         }
       },
@@ -131,7 +131,11 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
                       className="flex items-center justify-between rounded-lg border p-3"
                     >
                       <div>
-                        <p className="font-medium">{membership.user.name || membership.user.email}</p>
+                        <p className="font-medium">
+                          {[membership.user.firstName, membership.user.lastName].filter(Boolean).join(' ') ||
+                            membership.user.name ||
+                            membership.user.email}
+                        </p>
                         <p className="text-sm text-muted-foreground">{membership.user.email}</p>
                       </div>
                       <Badge variant={membership.role === 'client_admin' ? 'accent' : 'outline'}>

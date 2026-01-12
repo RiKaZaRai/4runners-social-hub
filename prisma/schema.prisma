@@ -75,6 +75,9 @@ model Tenant {
 model User {
   id            String             @id @default(uuid())
   email         String             @unique
+  firstName     String?
+  lastName      String?
+  phone         String?
   name          String?
   role          Role               @default(agency_user)
   passwordHash  String?

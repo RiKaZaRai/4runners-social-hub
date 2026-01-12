@@ -11,7 +11,7 @@ export default async function AdminDashboardPage() {
   // Verify user is agency_admin
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { role: true, name: true, email: true }
+    select: { role: true, name: true, firstName: true, lastName: true, email: true }
   });
 
   if (user?.role !== 'agency_admin') {
@@ -31,6 +31,12 @@ export default async function AdminDashboardPage() {
     orderBy: { createdAt: 'desc' }
   });
 
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() ||
+    user?.name ||
+    user?.email ||
+    '';
+
   return (
     <div className="space-y-6">
         {/* Header */}
@@ -39,7 +45,7 @@ export default async function AdminDashboardPage() {
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Dashboard Agence</p>
             <h1 className="text-3xl font-semibold">Tous les clients</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Connecté en tant que {user?.name || user?.email}
+              Connecté en tant que {displayName}
             </p>
           </div>
           <div className="flex gap-2">

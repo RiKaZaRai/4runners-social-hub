@@ -32,6 +32,9 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
         name: true,
         email: true,
         role: true,
@@ -47,23 +50,28 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
   async function createUser(formData: FormData) {
     'use server';
 
-    const name = (formData.get('name') as string | null)?.trim() || null;
+    const firstName = (formData.get('firstName') as string | null)?.trim();
+    const lastName = (formData.get('lastName') as string | null)?.trim();
+    const phone = (formData.get('phone') as string | null)?.trim() || null;
     const email = (formData.get('email') as string | null)?.trim().toLowerCase();
     const password = formData.get('password') as string | null;
-    const role = formData.get('role') as 'agency_user' | 'client' | null;
-    const tenantRole = formData.get('tenantRole') as 'viewer' | 'client_admin' | null;
+    const role = formData.get('role') as 'agency_admin' | 'agency_user' | null;
     const tenantIds = formData.getAll('tenantIds') as string[];
 
-    if (!email || !password || !role) {
+    if (!firstName || !lastName || !email || !password || !role) {
       redirect('/teams?error=missing_fields');
     }
 
     try {
       const passwordHash = await bcrypt.hash(password, 10);
+      const name = [firstName, lastName].filter(Boolean).join(' ').trim() || null;
 
       await prisma.$transaction(async (tx) => {
         const created = await tx.user.create({
           data: {
+            firstName,
+            lastName,
+            phone,
             name,
             email,
             role,
@@ -76,7 +84,7 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
             data: tenantIds.map((tenantId) => ({
               tenantId,
               userId: created.id,
-              role: tenantRole ?? 'viewer'
+              role: 'viewer'
             }))
           });
         }
@@ -130,8 +138,16 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
         <CardContent>
           <form action={createUser} className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Nom</Label>
-              <Input id="name" name="name" placeholder="Prénom Nom" />
+              <Label htmlFor="firstName">Prénom</Label>
+              <Input id="firstName" name="firstName" placeholder="Prénom" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Nom</Label>
+              <Input id="lastName" name="lastName" placeholder="Nom" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Téléphone</Label>
+              <Input id="phone" name="phone" placeholder="+33 6 12 34 56 78" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -149,8 +165,8 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 required
               >
-                <option value="agency_user">Equipe (agency_user)</option>
-                <option value="client">Client</option>
+                <option value="agency_admin">Admin 4runners</option>
+                <option value="agency_user">Gestionnaire 4runners</option>
               </select>
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -172,17 +188,6 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
                   ))}
                 </div>
               )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tenantRole">Droit sur les dossiers sélectionnés</Label>
-              <select
-                id="tenantRole"
-                name="tenantRole"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="viewer">Viewer (lecture seule)</option>
-                <option value="client_admin">Client Admin (validation posts)</option>
-              </select>
             </div>
             <div className="flex items-end">
               <Button type="submit" className="w-full md:w-auto">
@@ -215,8 +220,13 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
               className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm"
             >
               <div>
-                <div className="font-medium">{member.name ?? member.email}</div>
-                <div className="text-xs text-muted-foreground">{member.email}</div>
+                <div className="font-medium">
+                  {[member.firstName, member.lastName].filter(Boolean).join(' ') || member.name || member.email}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {member.email}
+                  {member.phone ? ` · ${member.phone}` : ''}
+                </div>
               </div>
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 {member.role}

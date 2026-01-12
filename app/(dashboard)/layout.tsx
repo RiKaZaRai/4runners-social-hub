@@ -13,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await requireSession();
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { role: true, name: true, email: true }
+    select: { role: true, name: true, email: true, firstName: true, lastName: true }
   });
   const isClient = currentUser?.role === 'client';
   const isAgency = currentUser?.role === 'agency_admin';
@@ -33,7 +33,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">4runners</p>
             <h1 className="text-lg font-semibold">Social Hub</h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              {currentUser?.name ?? currentUser?.email}
+              {[currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') ||
+                currentUser?.name ||
+                currentUser?.email}
             </p>
           </div>
 

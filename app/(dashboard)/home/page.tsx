@@ -9,7 +9,7 @@ export default async function HomePage() {
   const session = await requireSession();
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { role: true, name: true, email: true }
+    select: { role: true, name: true, email: true, firstName: true, lastName: true }
   });
 
   const isAgency = user?.role === 'agency_admin';
@@ -41,7 +41,7 @@ export default async function HomePage() {
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Accueil</p>
         <h1 className="text-2xl font-semibold">
-          Bonjour {user.name ?? user.email}
+          Bonjour {([user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || user.email)}
         </h1>
         <p className="text-sm text-muted-foreground">
           Vue d’ensemble de votre activité.
