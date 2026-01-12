@@ -29,9 +29,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    // Create tenant
-    const tenant = await prisma.tenant.create({
-      data: { name: name.trim() }
+    // Create tenant and attach creator membership so it appears in sidebar
+    const tenant = await prisma.$transaction(async (tx) => {
+      const created = await tx.tenant.create({
+        data: { name: name.trim() }
+      });
+      await tx.tenantMembership.create({
+        data: {
+          tenantId: created.id,
+          userId: session.userId,
+          role: 'client_admin'
+        }
+      });
+      return created;
     });
 
     return NextResponse.json(tenant, { status: 201 });

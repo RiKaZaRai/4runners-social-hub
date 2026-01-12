@@ -30,8 +30,20 @@ export default async function NewTenantPage() {
     }
 
     try {
-      const tenant = await prisma.tenant.create({
-        data: { name: name.trim() }
+      const tenant = await prisma.$transaction(async (tx) => {
+        const created = await tx.tenant.create({
+          data: { name: name.trim() }
+        });
+
+        await tx.tenantMembership.create({
+          data: {
+            tenantId: created.id,
+            userId: session.userId,
+            role: 'client_admin'
+          }
+        });
+
+        return created;
       });
 
       redirect(`/admin/${tenant.id}`);
