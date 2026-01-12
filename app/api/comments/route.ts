@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const data = {
       postId: form.get('postId')?.toString(),
       body: form.get('body')?.toString(),
-      authorRole: form.get('authorRole')?.toString()
+      authorRole: auth.role === 'client' ? 'client' : 'agency'
     };
     const tenantId = form.get('tenantId')?.toString();
 
@@ -65,8 +65,8 @@ export async function POST(req: Request) {
     });
 
     const redirectUrl = tenantId
-      ? `/posts/${comment.postId}?tenantId=${tenantId}`
-      : `/posts/${comment.postId}`;
+      ? `/posts?tenantId=${tenantId}&postId=${comment.postId}`
+      : `/posts?postId=${comment.postId}`;
     return NextResponse.redirect(new URL(redirectUrl, req.url));
   } catch (error) {
     return handleApiError(error);

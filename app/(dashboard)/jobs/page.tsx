@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CsrfInput } from '@/components/csrf-input';
 
 export default async function JobsPage() {
-  await requireSession();
+  const session = await requireSession();
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { role: true }
+  });
+  if (!currentUser || currentUser.role === 'client') {
+    redirect('/posts');
+  }
   const jobs = await prisma.outboxJob.findMany({
     orderBy: { createdAt: 'desc' },
     take: 50

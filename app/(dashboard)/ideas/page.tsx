@@ -18,18 +18,30 @@ export default async function IdeasPage({
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Backlog client</p>
         <h2 className="text-2xl font-semibold">Idees</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Proposez vos idees. L'agence les transforme ensuite en posts a valider.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Nouvelle idee</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <IdeaCreateClient tenantId={tenantId} />
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Nouvelle idee</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <IdeaCreateClient tenantId={tenantId} />
+          </CardContent>
+        </Card>
 
-      <IdeasClient tenantId={tenantId} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Idees en attente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <IdeasClient tenantId={tenantId} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

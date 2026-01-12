@@ -5,6 +5,7 @@ import { SESSION_COOKIE } from '@/lib/auth';
 
 export interface AuthenticatedRequest {
   userId: string;
+  role: 'agency_admin' | 'agency_user' | 'client';
   tenantIds: string[];
   session: {
     id: string;
@@ -33,7 +34,8 @@ export async function requireAuth(): Promise<AuthenticatedRequest> {
     },
     include: {
       user: {
-        include: {
+        select: {
+          role: true,
           memberships: {
             select: { tenantId: true }
           }
@@ -48,6 +50,7 @@ export async function requireAuth(): Promise<AuthenticatedRequest> {
 
   return {
     userId: session.userId,
+    role: session.user.role,
     tenantIds: session.user.memberships.map(m => m.tenantId),
     session: {
       id: session.id,
@@ -67,6 +70,12 @@ export function requireTenantAccess(auth: AuthenticatedRequest, tenantId: string
   }
 
   if (!auth.tenantIds.includes(tenantId)) {
+    throw new Error('FORBIDDEN');
+  }
+}
+
+export function requireAgency(auth: AuthenticatedRequest): void {
+  if (auth.role === 'client') {
     throw new Error('FORBIDDEN');
   }
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { PutObjectCommand, type PutObjectCommandInput } from '@aws-sdk/client-s3';
 import { prisma } from '@/lib/db';
 import { minioBucket, s3Client } from '@/lib/minio';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 import {
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
   try {
     // Authenticate the user
     const auth = await requireAuth();
+    requireAgency(auth);
 
     // Rate limiting (stricter for uploads)
     await requireRateLimit(auth.userId, 'upload');
@@ -116,7 +117,9 @@ export async function POST(req: Request) {
     });
 
     if (postId) {
-      return NextResponse.redirect(new URL(`/posts/${postId}?tenantId=${tenantId}`, req.url));
+      return NextResponse.redirect(
+        new URL(`/posts?tenantId=${tenantId}&postId=${postId}`, req.url)
+      );
     }
 
     return NextResponse.json(asset);

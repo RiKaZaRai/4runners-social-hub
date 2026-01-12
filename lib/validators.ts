@@ -10,10 +10,19 @@ export const postStatusSchema = z.enum([
   'archived'
 ]);
 
+export const networkSchema = z.enum([
+  'instagram',
+  'facebook',
+  'linkedin',
+  'x',
+  'tiktok'
+]);
+
 export const createPostSchema = z.object({
   tenantId: z.string().uuid(),
   title: z.string().min(2),
   body: z.string().min(1),
+  network: networkSchema.optional(),
   status: postStatusSchema.optional(),
   scheduledAt: z.string().datetime().optional()
 });

@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession();
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { role: true }
+  });
+  const isClient = currentUser?.role === 'client';
   const memberships = await prisma.tenantMembership.findMany({
     where: { userId: session.userId },
     include: { tenant: true }
@@ -44,9 +49,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link className="block rounded-md px-3 py-2 hover:bg-muted" href="/ideas">
               Idees
             </Link>
-            <Link className="block rounded-md px-3 py-2 hover:bg-muted" href="/jobs">
-              Jobs / erreurs
-            </Link>
+            {!isClient && (
+              <>
+                <Link className="block rounded-md px-3 py-2 hover:bg-muted" href="/clients">
+                  Clients
+                </Link>
+                <Link className="block rounded-md px-3 py-2 hover:bg-muted" href="/jobs">
+                  Jobs / erreurs
+                </Link>
+              </>
+            )}
           </nav>
         </aside>
         <main>{children}</main>

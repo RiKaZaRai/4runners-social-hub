@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createPostSchema } from '@/lib/validators';
 import { prisma } from '@/lib/db';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
-import { requireRateLimit, getClientIdentifier } from '@/lib/rate-limit';
+import { requireRateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: Request) {
   try {
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
   try {
     // Authenticate the user
     const auth = await requireAuth();
+    requireAgency(auth);
 
     // Rate limiting
     await requireRateLimit(auth.userId, 'api');
@@ -45,7 +46,8 @@ export async function POST(req: Request) {
     const data = {
       tenantId: form.get('tenantId')?.toString(),
       title: form.get('title')?.toString(),
-      body: form.get('body')?.toString()
+      body: form.get('body')?.toString(),
+      network: form.get('network')?.toString()
     };
 
     const parsed = createPostSchema.safeParse(data);
@@ -62,7 +64,8 @@ export async function POST(req: Request) {
         data: {
           tenantId: parsed.data.tenantId,
           title: parsed.data.title,
-          body: parsed.data.body
+          body: parsed.data.body,
+          network: parsed.data.network ?? 'linkedin'
         }
       });
 
@@ -87,7 +90,9 @@ export async function POST(req: Request) {
       return newPost;
     });
 
-    return NextResponse.redirect(new URL(`/posts/${post.id}?tenantId=${post.tenantId}`, req.url));
+    return NextResponse.redirect(
+      new URL(`/posts?tenantId=${post.tenantId}&postId=${post.id}`, req.url)
+    );
   } catch (error) {
     return handleApiError(error);
   }

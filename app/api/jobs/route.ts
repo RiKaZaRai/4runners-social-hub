@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { enqueueDeleteRemote, enqueuePublish, enqueueSyncComments } from '@/lib/jobs';
 import { buildIdempotencyKey } from '@/lib/workflow';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -10,6 +10,7 @@ export async function GET(req: Request) {
   try {
     // Authenticate the user
     const auth = await requireAuth();
+    requireAgency(auth);
 
     // Rate limiting
     await requireRateLimit(auth.userId, 'api');
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
   try {
     // Authenticate the user
     const auth = await requireAuth();
+    requireAgency(auth);
 
     // Rate limiting
     await requireRateLimit(auth.userId, 'api');

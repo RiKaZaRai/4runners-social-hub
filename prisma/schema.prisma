@@ -35,6 +35,14 @@ enum CommentRole {
   client
 }
 
+enum SocialNetwork {
+  instagram
+  facebook
+  linkedin
+  x
+  tiktok
+}
+
 enum JobStatus {
   queued
   processing
@@ -51,6 +59,7 @@ model Tenant {
   posts       Post[]
   ideas       Idea[]
   assets      Asset[]
+  channels    TenantChannel[]
   outboxJobs  OutboxJob[]
   auditLogs   AuditLog[]
 }
@@ -112,6 +121,7 @@ model Post {
   title         String
   body          String
   status        PostStatus      @default(draft)
+  network       SocialNetwork   @default(linkedin)
   scheduledAt   DateTime?
   publishedAt   DateTime?
   archivedAt    DateTime?
@@ -130,6 +140,20 @@ model Post {
   assets      Asset[]
 
   @@index([tenantId, status])
+}
+
+model TenantChannel {
+  id        String        @id @default(uuid())
+  tenantId  String
+  network   SocialNetwork
+  handle    String?
+  url       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, network])
 }
 
 model PostVersion {

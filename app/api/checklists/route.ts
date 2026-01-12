@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { checklistSchema } from '@/lib/validators';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -9,6 +9,7 @@ export async function POST(req: Request) {
   try {
     // Authenticate the user
     const auth = await requireAuth();
+    requireAgency(auth);
 
     // Rate limiting
     await requireRateLimit(auth.userId, 'api');
@@ -65,8 +66,8 @@ export async function POST(req: Request) {
     });
 
     const redirectUrl = tenantId
-      ? `/posts/${parsed.data.postId}?tenantId=${tenantId}`
-      : `/posts/${parsed.data.postId}`;
+      ? `/posts?tenantId=${tenantId}&postId=${parsed.data.postId}`
+      : `/posts?postId=${parsed.data.postId}`;
     return NextResponse.redirect(new URL(redirectUrl, req.url));
   } catch (error) {
     return handleApiError(error);
@@ -77,6 +78,7 @@ export async function PATCH(req: Request) {
   try {
     // Authenticate the user
     const auth = await requireAuth();
+    requireAgency(auth);
 
     // Rate limiting
     await requireRateLimit(auth.userId, 'api');

@@ -15,9 +15,15 @@ export default async function PostDetailPage({
   params: { id: string };
   searchParams: { tenantId?: string };
 }) {
-  await requireSession();
+  const session = await requireSession();
   const tenantId = searchParams.tenantId;
   if (!tenantId) redirect('/select-tenant');
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { role: true }
+  });
+  const isClient = currentUser?.role === 'client';
 
   const post = await prisma.post.findFirst({
     where: { id: params.id, tenantId },
@@ -59,13 +65,15 @@ export default async function PostDetailPage({
                 <span className="text-muted-foreground">{item.checked ? 'OK' : 'TODO'}</span>
               </div>
             ))}
-            <form action="/api/checklists" method="post" className="mt-3 flex gap-2">
-              <CsrfInput />
-              <Input type="text" name="label" placeholder="Nouvel item" required />
-              <input type="hidden" name="postId" value={post.id} />
-              <input type="hidden" name="tenantId" value={tenantId} />
-              <Button type="submit" size="sm">Ajouter</Button>
-            </form>
+            {!isClient && (
+              <form action="/api/checklists" method="post" className="mt-3 flex gap-2">
+                <CsrfInput />
+                <Input type="text" name="label" placeholder="Nouvel item" required />
+                <input type="hidden" name="postId" value={post.id} />
+                <input type="hidden" name="tenantId" value={tenantId} />
+                <Button type="submit" size="sm">Ajouter</Button>
+              </form>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -84,35 +92,42 @@ export default async function PostDetailPage({
               <Textarea name="body" placeholder="Ajouter un commentaire" required />
               <input type="hidden" name="postId" value={post.id} />
               <input type="hidden" name="tenantId" value={tenantId} />
-              <input type="hidden" name="authorRole" value="agency" />
+              <input type="hidden" name="authorRole" value={isClient ? 'client' : 'agency'} />
               <Button type="submit" size="sm">Commenter</Button>
             </form>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Medias</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {post.assets.map((asset) => (
-            <div key={asset.id} className="flex items-center justify-between text-sm">
-              <span>{asset.key}</span>
-              <a className="text-primary hover:underline" href={asset.url}>
-                Ouvrir
-              </a>
-            </div>
-          ))}
-          <form action="/api/assets/upload" method="post" encType="multipart/form-data" className="mt-3 flex gap-2">
-            <CsrfInput />
-            <Input type="file" name="file" required />
-            <input type="hidden" name="tenantId" value={tenantId} />
-            <input type="hidden" name="postId" value={post.id} />
-            <Button type="submit" size="sm">Uploader</Button>
-          </form>
-        </CardContent>
-      </Card>
+      {!isClient && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Medias</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {post.assets.map((asset) => (
+              <div key={asset.id} className="flex items-center justify-between text-sm">
+                <span>{asset.key}</span>
+                <a className="text-primary hover:underline" href={asset.url}>
+                  Ouvrir
+                </a>
+              </div>
+            ))}
+            <form
+              action="/api/assets/upload"
+              method="post"
+              encType="multipart/form-data"
+              className="mt-3 flex gap-2"
+            >
+              <CsrfInput />
+              <Input type="file" name="file" required />
+              <input type="hidden" name="tenantId" value={tenantId} />
+              <input type="hidden" name="postId" value={post.id} />
+              <Button type="submit" size="sm">Uploader</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

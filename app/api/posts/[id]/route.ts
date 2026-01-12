@@ -59,6 +59,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       id: params.id,
       title: form.get('title')?.toString(),
       body: form.get('body')?.toString(),
+      network: form.get('network')?.toString(),
       status: form.get('status')?.toString(),
       scheduledAt: form.get('scheduledAt')?.toString()
     };
@@ -66,6 +67,23 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     const parsed = updatePostSchema.safeParse(data);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    if (auth.role === 'client') {
+      const isUpdatingFields =
+        parsed.data.title ||
+        parsed.data.body ||
+        parsed.data.network ||
+        parsed.data.scheduledAt;
+      const allowedStatuses = ['approved', 'changes_requested'];
+
+      if (isUpdatingFields) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+
+      if (parsed.data.status && !allowedStatuses.includes(parsed.data.status)) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
     }
 
     if (parsed.data.status && !canTransition(existing.status, parsed.data.status)) {
@@ -79,6 +97,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         data: {
           title: parsed.data.title ?? undefined,
           body: parsed.data.body ?? undefined,
+          network: parsed.data.network ?? undefined,
           status: parsed.data.status ?? undefined,
           scheduledAt: parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : undefined
         }
@@ -124,6 +143,9 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
 
     // Authenticate the user
     const auth = await requireAuth();
+    if (auth.role === 'client') {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
 
     // Rate limiting
     await requireRateLimit(auth.userId, 'api');
