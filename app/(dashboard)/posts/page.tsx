@@ -292,7 +292,7 @@ export default async function PostsPage({
                                 <CsrfInput />
                                 <input type="hidden" name="status" value="archived" />
                                 <input type="hidden" name="tenantId" value={tenantId} />
-                                <Button type="submit" size="sm" variant="destructive">
+                                <Button type="submit" size="sm" variant="outline">
                                   Archiver
                                 </Button>
                               </form>
