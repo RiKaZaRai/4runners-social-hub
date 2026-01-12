@@ -23,7 +23,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
   const tenant = await prisma.tenant.findUnique({
     where: { id: params.tenantId },
     include: {
-      members: {
+      memberships: {
         include: {
           user: {
             select: { id: true, name: true, email: true, role: true }
@@ -42,7 +42,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
       _count: {
         select: {
           posts: true,
-          members: true
+          memberships: true
         }
       }
     }
@@ -96,7 +96,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
               <CardTitle className="text-sm font-medium">Membres</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{tenant._count.members}</p>
+              <p className="text-3xl font-bold">{tenant._count.memberships}</p>
             </CardContent>
           </Card>
           <Card>
@@ -120,10 +120,10 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {tenant.members.length === 0 ? (
+                {tenant.memberships.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Aucun membre</p>
                 ) : (
-                  tenant.members.map((membership) => (
+                  tenant.memberships.map((membership) => (
                     <div
                       key={membership.id}
                       className="flex items-center justify-between rounded-lg border p-3"

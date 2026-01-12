@@ -24,7 +24,7 @@ export default async function AdminDashboardPage() {
       _count: {
         select: {
           posts: true,
-          members: true
+          memberships: true
         }
       }
     },
@@ -76,7 +76,7 @@ export default async function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">
-                {tenants.reduce((sum, t) => sum + t._count.members, 0)}
+                {tenants.reduce((sum, t) => sum + t._count.memberships, 0)}
               </p>
             </CardContent>
           </Card>
@@ -101,7 +101,7 @@ export default async function AdminDashboardPage() {
                         <span className="font-medium">{tenant._count.posts}</span> posts
                       </div>
                       <div>
-                        <span className="font-medium">{tenant._count.members}</span> membres
+                        <span className="font-medium">{tenant._count.memberships}</span> membres
                       </div>
                     </div>
                   </CardContent>
