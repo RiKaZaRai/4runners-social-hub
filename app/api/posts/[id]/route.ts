@@ -4,13 +4,15 @@ import { updatePostSchema } from '@/lib/validators';
 import { canTransition } from '@/lib/workflow';
 import { enqueueDeleteRemote } from '@/lib/jobs';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   const post = await prisma.post.findUnique({ where: { id: params.id } });
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(post);
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   const form = await req.formData();
   const data = {
     id: params.id,
@@ -53,7 +55,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   const post = await prisma.post.update({
     where: { id: params.id },
     data: { status: 'archived', archivedAt: new Date() }
