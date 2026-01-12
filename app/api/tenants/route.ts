@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { requireAuth, requireAgency, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'name required' }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx) => {
+    const tenant = await prisma.$transaction(async (tx) => {
       const created = await tx.tenant.create({
         data: { name: name.trim() }
       });
@@ -39,9 +40,12 @@ export async function POST(req: Request) {
           payload: { name: created.name, userId: auth.userId }
         }
       });
+      return created;
     });
 
-    return NextResponse.redirect(new URL(`/select-tenant`, req.url));
+    revalidatePath('/clients');
+    revalidatePath('/posts');
+    return NextResponse.redirect(new URL(`/clients?tenantId=${tenant.id}`, req.url));
   } catch (error) {
     return handleApiError(error);
   }

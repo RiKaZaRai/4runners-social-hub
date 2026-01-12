@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { CsrfInput } from '@/components/csrf-input';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession();
   const currentUser = await prisma.user.findUnique({
