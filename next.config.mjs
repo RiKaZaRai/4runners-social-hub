@@ -43,14 +43,14 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline and unsafe-eval for dev
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline and unsafe-eval
               "style-src 'self' 'unsafe-inline'", // Required for styled components
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
               "connect-src 'self'",
               "frame-ancestors 'self'",
               "base-uri 'self'",
-              "form-action 'self'"
+              "form-action 'self' https://octopus.digital-jungle.fr" // Allow form submissions to production domain
             ].join('; ')
           }
         ]
