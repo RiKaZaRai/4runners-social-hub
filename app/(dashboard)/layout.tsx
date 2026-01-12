@@ -1,8 +1,11 @@
 import Link from 'next/link';
+import { AlertTriangle, Building2, Home, Users } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { CsrfInput } from '@/components/csrf-input';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,62 +13,115 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await requireSession();
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { role: true }
+    select: { role: true, name: true, email: true }
   });
   const isClient = currentUser?.role === 'client';
+  const isAgency = currentUser?.role === 'agency_admin';
   const memberships = await prisma.tenantMembership.findMany({
     where: { userId: session.userId },
     include: { tenant: true }
   });
+  const tenants = isAgency
+    ? await prisma.tenant.findMany({ orderBy: { name: 'asc' } })
+    : memberships.map((membership) => membership.tenant);
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">4runners</p>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="flex min-h-screen">
+        <aside className="flex w-64 flex-col border-r border-border bg-card/60">
+          <div className="border-b border-border px-5 py-5">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">4runners</p>
             <h1 className="text-lg font-semibold">Social Hub</h1>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {currentUser?.name ?? currentUser?.email}
+            </p>
           </div>
-          <form action="/api/auth/logout" method="post">
-            <CsrfInput />
-            <Button variant="outline" size="sm">Se deconnecter</Button>
-          </form>
-        </div>
-      </header>
-      <div className="mx-auto grid max-w-6xl grid-cols-[220px_1fr] gap-6 px-6 py-8">
-        <aside className="space-y-4">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Comptes</p>
-            <ul className="mt-2 space-y-2 text-sm">
-              {memberships.map((membership) => (
-                <li key={membership.id}>
-                  <Link className="text-primary hover:underline" href={`/posts?tenantId=${membership.tenantId}`}>
-                    {membership.tenant.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <nav className="space-y-2 text-sm">
-            <Link className="block rounded-md px-3 py-2 hover:bg-muted" href="/posts">
-              Posts
-            </Link>
-            <Link className="block rounded-md px-3 py-2 hover:bg-muted" href="/ideas">
-              Idees
-            </Link>
-            {!isClient && (
-              <>
-                <Link className="block rounded-md px-3 py-2 hover:bg-muted" href="/clients">
-                  Clients
+
+          <nav className="flex-1 space-y-6 px-4 py-5 text-sm">
+            <div className="space-y-1">
+              <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/home">
+                <Home className="h-4 w-4" />
+                Accueil
+              </Link>
+              <Link
+                className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"
+                href={isClient ? '/posts' : '/clients'}
+              >
+                <Building2 className="h-4 w-4" />
+                Espaces
+              </Link>
+              {isAgency && (
+                <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/teams">
+                  <Users className="h-4 w-4" />
+                  Equipes
                 </Link>
-                <Link className="block rounded-md px-3 py-2 hover:bg-muted" href="/jobs">
-                  Jobs / erreurs
-                </Link>
-              </>
-            )}
+              )}
+              <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/jobs">
+                <AlertTriangle className="h-4 w-4" />
+                Jobs / erreurs
+              </Link>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card px-3 py-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Comptes
+                </p>
+                {isAgency && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/admin/new-tenant">Nouveau</Link>
+                  </Button>
+                )}
+              </div>
+              <ul className="mt-3 space-y-3 text-sm">
+                {tenants.map((tenant) => (
+                  <li key={tenant.id} className="space-y-1">
+                    <Link
+                      className="block rounded-md px-2 py-1 text-primary hover:bg-muted"
+                      href={`/posts?tenantId=${tenant.id}`}
+                    >
+                      {tenant.name}
+                    </Link>
+                    <div className="flex gap-3 px-2 text-xs text-muted-foreground">
+                      <Link className="hover:text-foreground" href={`/posts?tenantId=${tenant.id}`}>
+                        Posts
+                      </Link>
+                      <Link className="hover:text-foreground" href={`/ideas?tenantId=${tenant.id}`}>
+                        Idees
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+                {tenants.length === 0 && (
+                  <li className="rounded-md border border-dashed border-border px-2 py-2 text-xs text-muted-foreground">
+                    Aucun client pour le moment.
+                  </li>
+                )}
+              </ul>
+            </div>
           </nav>
         </aside>
-        <main>{children}</main>
+
+        <div className="flex min-h-screen flex-1 flex-col">
+          <header className="flex items-center justify-between border-b border-border bg-card/80 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <Input
+                className="w-[280px] rounded-full bg-background"
+                placeholder="Rechercher..."
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <form action="/api/auth/logout" method="post">
+                <CsrfInput />
+                <Button variant="outline" size="sm">
+                  Se deconnecter
+                </Button>
+              </form>
+            </div>
+          </header>
+          <main className="flex-1 px-6 py-6">{children}</main>
+        </div>
       </div>
     </div>
   );

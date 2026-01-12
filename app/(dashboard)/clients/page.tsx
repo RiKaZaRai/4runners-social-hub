@@ -79,6 +79,9 @@ export default async function ClientsPage({
     });
 
     revalidatePath('/clients');
+    revalidatePath('/clients', 'layout');
+    revalidatePath('/home');
+    revalidatePath('/home', 'layout');
     revalidatePath('/posts');
     return;
   }
@@ -136,6 +139,9 @@ export default async function ClientsPage({
     });
 
     revalidatePath('/clients');
+    revalidatePath('/clients', 'layout');
+    revalidatePath('/home');
+    revalidatePath('/home', 'layout');
     revalidatePath('/posts');
   }
 

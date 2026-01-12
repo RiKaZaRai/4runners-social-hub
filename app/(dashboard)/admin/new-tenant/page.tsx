@@ -70,8 +70,12 @@ export default async function NewTenantPage({
       });
 
       revalidatePath('/admin/new-tenant');
+      revalidatePath('/admin/new-tenant', 'layout');
       revalidatePath('/clients');
+      revalidatePath('/clients', 'layout');
       revalidatePath('/posts');
+      revalidatePath('/home');
+      revalidatePath('/home', 'layout');
       redirect('/admin/new-tenant?success=1');
     } catch (error) {
       console.error('Error creating tenant:', error);
@@ -83,63 +87,61 @@ export default async function NewTenantPage({
   }
 
   return (
-    <div className="min-h-screen px-6 py-16">
-      <div className="mx-auto max-w-2xl space-y-6">
-        <div>
-          <Link
-            href="/admin"
-            className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← Retour au dashboard
-          </Link>
-          <h1 className="text-3xl font-semibold">Nouveau Client</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Créer un nouveau compte client
-          </p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Informations du client</CardTitle>
-            <CardDescription>
-              Entrez les informations pour créer un nouveau client
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {searchParams?.success && !searchParams?.error && (
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
-                Client cree. La liste se met a jour automatiquement.
-              </div>
-            )}
-            {searchParams?.error && (
-              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {ERROR_MESSAGES[searchParams.error] ?? ERROR_MESSAGES.creation_failed}
-              </div>
-            )}
-            <form action={createTenant} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nom du client</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="Ex: Entreprise ABC"
-                  required
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1">
-                  Créer le client
-                </Button>
-                <Button type="button" variant="outline" asChild>
-                  <Link href="/admin">Annuler</Link>
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <div>
+        <Link
+          href="/admin"
+          className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          ← Retour au dashboard
+        </Link>
+        <h1 className="text-3xl font-semibold">Nouveau Client</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Créer un nouveau compte client
+        </p>
       </div>
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>Informations du client</CardTitle>
+          <CardDescription>
+            Entrez les informations pour créer un nouveau client
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {searchParams?.success && !searchParams?.error && (
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
+              Client cree. La liste se met a jour automatiquement.
+            </div>
+          )}
+          {searchParams?.error && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {ERROR_MESSAGES[searchParams.error] ?? ERROR_MESSAGES.creation_failed}
+            </div>
+          )}
+          <form action={createTenant} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom du client</Label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                placeholder="Ex: Entreprise ABC"
+                required
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1">
+                Créer le client
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <Link href="/admin">Annuler</Link>
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
