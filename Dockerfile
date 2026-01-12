@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS base
+FROM node:24-bookworm-slim AS base
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
