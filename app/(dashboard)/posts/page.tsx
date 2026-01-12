@@ -167,7 +167,7 @@ export default async function PostsPage({
                           <Badge variant="outline" className="text-[10px] uppercase">
                             {post.status}
                           </Badge>
-                          <Badge variant="secondary" className="text-[10px] uppercase">
+                          <Badge variant="outline" className="text-[10px] uppercase">
                             {post.network}
                           </Badge>
                         </div>
@@ -198,7 +198,7 @@ export default async function PostsPage({
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{selectedPost.status}</Badge>
-                        <Badge variant="secondary" className="uppercase">
+                        <Badge variant="outline" className="uppercase">
                           {selectedPost.network}
                         </Badge>
                       </div>
@@ -472,7 +472,7 @@ export default async function PostsPage({
               <div key={column.key} className="min-w-[260px] max-w-[320px] flex-1">
                 <div className="mb-2 flex items-center justify-between">
                   <div className="text-sm font-medium">{column.label}</div>
-                  <Badge variant="secondary">{(byStatus[column.key] ?? []).length}</Badge>
+                  <Badge variant="outline">{(byStatus[column.key] ?? []).length}</Badge>
                 </div>
                 <div className="space-y-2 rounded-xl border bg-muted/30 p-2">
                   {(byStatus[column.key] ?? []).map((post) => (
