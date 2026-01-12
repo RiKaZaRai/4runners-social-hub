@@ -1,30 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Moon, Sparkles, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ThemeMode = 'light' | 'dark' | 'night';
+type ThemeMode = 'light' | 'dark';
 
-const THEMES: ThemeMode[] = ['light', 'dark', 'night'];
+const THEMES: ThemeMode[] = ['light', 'dark'];
 
 const THEME_LABELS: Record<ThemeMode, string> = {
   light: 'Clair',
-  dark: 'Dark',
-  night: 'Night'
+  dark: 'Dark'
 };
 
 const THEME_ICONS: Record<ThemeMode, typeof Sun> = {
   light: Sun,
-  dark: Moon,
-  night: Sparkles
+  dark: Moon
 };
 
 function applyTheme(theme: ThemeMode) {
   const root = document.documentElement;
-  root.classList.remove('dark', 'night');
+  root.classList.remove('dark');
   if (theme === 'dark') root.classList.add('dark');
-  if (theme === 'night') root.classList.add('night');
   root.dataset.theme = theme;
 }
 

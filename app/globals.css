@@ -22,24 +22,6 @@
 }
 
 .dark {
-  --background: 220 16% 10%;
-  --foreground: 210 20% 92%;
-  --card: 220 16% 13%;
-  --card-foreground: 210 20% 92%;
-  --primary: 210 86% 62%;
-  --primary-foreground: 220 16% 10%;
-  --secondary: 220 12% 18%;
-  --secondary-foreground: 210 20% 92%;
-  --muted: 220 10% 18%;
-  --muted-foreground: 215 12% 62%;
-  --accent: 32 84% 62%;
-  --accent-foreground: 220 16% 10%;
-  --destructive: 0 72% 56%;
-  --destructive-foreground: 210 20% 92%;
-  --border: 220 12% 22%;
-}
-
-.night {
   --background: 226 22% 8%;
   --foreground: 210 25% 94%;
   --card: 226 20% 11%;
