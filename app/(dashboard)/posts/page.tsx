@@ -237,7 +237,7 @@ export default async function PostsPage({
                                 <CsrfInput />
                                 <input type="hidden" name="status" value="changes_requested" />
                                 <input type="hidden" name="tenantId" value={tenantId} />
-                                <Button type="submit" size="sm" variant="secondary">
+                                <Button type="submit" size="sm" variant="outline">
                                   Demander des modifs
                                 </Button>
                               </form>
@@ -250,7 +250,7 @@ export default async function PostsPage({
                                 <CsrfInput />
                                 <input type="hidden" name="status" value="pending_client" />
                                 <input type="hidden" name="tenantId" value={tenantId} />
-                                <Button type="submit" size="sm" variant="secondary">
+                                <Button type="submit" size="sm" variant="outline">
                                   {selectedPost.status === 'draft'
                                     ? 'Envoyer au client'
                                     : 'Repasser a valider'}
@@ -272,7 +272,7 @@ export default async function PostsPage({
                                 <CsrfInput />
                                 <input type="hidden" name="status" value="scheduled" />
                                 <input type="hidden" name="tenantId" value={tenantId} />
-                                <Button type="submit" size="sm" variant="secondary">
+                                <Button type="submit" size="sm" variant="outline">
                                   Marquer programme
                                 </Button>
                               </form>
@@ -282,7 +282,7 @@ export default async function PostsPage({
                                 <CsrfInput />
                                 <input type="hidden" name="status" value="published" />
                                 <input type="hidden" name="tenantId" value={tenantId} />
-                                <Button type="submit" size="sm" variant="secondary">
+                                <Button type="submit" size="sm" variant="outline">
                                   Marquer publie
                                 </Button>
                               </form>
