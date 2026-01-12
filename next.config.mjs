@@ -49,8 +49,8 @@ const nextConfig = {
               "font-src 'self' data:",
               "connect-src 'self'",
               "frame-ancestors 'self'",
-              "base-uri 'self'",
-              "form-action 'self' https://octopus.digital-jungle.fr" // Allow form submissions to production domain
+              "base-uri 'self'"
+              // Removed form-action to allow form submissions (CSRF protection still active)
             ].join('; ')
           }
         ]
