@@ -132,7 +132,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
                         <p className="font-medium">{membership.user.name || membership.user.email}</p>
                         <p className="text-sm text-muted-foreground">{membership.user.email}</p>
                       </div>
-                      <Badge variant={membership.user.role === 'agency_admin' ? 'default' : 'secondary'}>
+                      <Badge variant={membership.user.role === 'agency_admin' ? 'accent' : 'outline'}>
                         {membership.user.role}
                       </Badge>
                     </div>
@@ -166,7 +166,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
                             {post._count.comments} commentaire(s)
                           </p>
                         </div>
-                        <Badge variant={post.status === 'published' ? 'default' : 'secondary'}>
+                        <Badge variant={post.status === 'published' ? 'accent' : 'outline'}>
                           {post.status}
                         </Badge>
                       </div>
