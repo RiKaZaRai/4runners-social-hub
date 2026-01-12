@@ -19,7 +19,7 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form action="/api/auth/login" method="post" className="space-y-4">
-              <CsrfInput />
+              <CsrfInput showStatus />
               <Input name="email" type="email" placeholder="admin@4runners.local" required />
               <Input name="password" type="password" placeholder="Mot de passe" required />
               <Button type="submit" className="w-full">Se connecter</Button>
@@ -33,7 +33,7 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <form action="/api/auth/login" method="post" className="space-y-4">
-              <CsrfInput />
+              <CsrfInput showStatus />
               <Input name="accessToken" type="text" placeholder="client-token-123" required />
               <Button type="submit" variant="outline" className="w-full">Entrer avec token</Button>
             </form>
