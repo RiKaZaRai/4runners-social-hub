@@ -48,4 +48,17 @@ pnpm worker
 
 - Utiliser `docker-compose.prod.yml` pour un stack tout-in-one.
 - Configurer le service `app` avec le domaine `octopus.digital-jungle.fr`.
-- Lancer apres deploy: `pnpm prisma migrate deploy` (et `pnpm prisma:seed` une seule fois).
+- Lancer apres deploy: `pnpm prisma:seed` une seule fois (les migrations sont lancees au boot de `app`).
+
+Variables recommandees (Dokploy secrets):
+
+```
+APP_URL=https://octopus.digital-jungle.fr
+POSTGRES_USER=octopus
+POSTGRES_PASSWORD=change-me-very-long
+POSTGRES_DB=octopus
+MINIO_ROOT_USER=octopus-minio
+MINIO_ROOT_PASSWORD=change-me-very-long
+MINIO_BUCKET=octopus-media
+MINIO_REGION=us-east-1
+```
