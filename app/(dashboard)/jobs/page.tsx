@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CsrfInput } from '@/components/csrf-input';
 
 export default async function JobsPage() {
   await requireSession();
@@ -30,6 +31,7 @@ export default async function JobsPage() {
               {job.lastError && <div className="text-red-600">{job.lastError}</div>}
               {job.status === 'failed' && (
                 <form action="/api/jobs/retry" method="post">
+                  <CsrfInput />
                   <input type="hidden" name="jobId" value={job.id} />
                   <Button type="submit" size="sm">Relancer</Button>
                 </form>

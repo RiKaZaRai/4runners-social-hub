@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { CsrfInput } from '@/components/csrf-input';
 
 export default async function PostDetailPage({
   params,
@@ -59,6 +60,7 @@ export default async function PostDetailPage({
               </div>
             ))}
             <form action="/api/checklists" method="post" className="mt-3 flex gap-2">
+              <CsrfInput />
               <Input type="text" name="label" placeholder="Nouvel item" required />
               <input type="hidden" name="postId" value={post.id} />
               <input type="hidden" name="tenantId" value={tenantId} />
@@ -78,6 +80,7 @@ export default async function PostDetailPage({
               </div>
             ))}
             <form action="/api/comments" method="post" className="space-y-2">
+              <CsrfInput />
               <Textarea name="body" placeholder="Ajouter un commentaire" required />
               <input type="hidden" name="postId" value={post.id} />
               <input type="hidden" name="tenantId" value={tenantId} />
@@ -102,6 +105,7 @@ export default async function PostDetailPage({
             </div>
           ))}
           <form action="/api/assets/upload" method="post" encType="multipart/form-data" className="mt-3 flex gap-2">
+            <CsrfInput />
             <Input type="file" name="file" required />
             <input type="hidden" name="tenantId" value={tenantId} />
             <input type="hidden" name="postId" value={post.id} />

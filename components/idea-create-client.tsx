@@ -6,7 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
+async function fetchCsrfToken(): Promise<string> {
+  const res = await fetch('/api/csrf', { credentials: 'include', cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error('Failed to fetch CSRF token');
+  }
+  const data = await res.json();
+  return data.token as string;
+}
+
 async function createIdea(tenantId: string, title: string, description: string) {
+  const csrfToken = await fetchCsrfToken();
   const formData = new FormData();
   formData.set('tenantId', tenantId);
   formData.set('title', title);
@@ -14,7 +24,11 @@ async function createIdea(tenantId: string, title: string, description: string) 
 
   const res = await fetch('/api/ideas', {
     method: 'POST',
-    body: formData
+    body: formData,
+    headers: {
+      'x-csrf-token': csrfToken
+    },
+    credentials: 'include'
   });
 
   if (!res.ok) {

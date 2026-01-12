@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { CsrfInput } from '@/components/csrf-input';
 
 export default async function NewPostPage({
   searchParams
@@ -21,6 +22,7 @@ export default async function NewPostPage({
       </CardHeader>
       <CardContent>
         <form action="/api/posts" method="post" className="space-y-4">
+          <CsrfInput />
           <Input name="title" placeholder="Titre" required />
           <Textarea name="body" placeholder="Contenu" required />
           <input type="hidden" name="tenantId" value={tenantId} />

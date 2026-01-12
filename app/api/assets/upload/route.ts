@@ -1,47 +1,126 @@
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand, type PutObjectCommandInput } from '@aws-sdk/client-s3';
 import { prisma } from '@/lib/db';
 import { minioBucket, s3Client } from '@/lib/minio';
+import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireCsrfToken } from '@/lib/csrf';
+import { requireRateLimit } from '@/lib/rate-limit';
+import {
+  validateFile,
+  verifyFileSignature,
+  generateStorageKey,
+  sanitizeFilename
+} from '@/lib/file-validation';
 
 export async function POST(req: Request) {
-  const form = await req.formData();
-  const tenantId = form.get('tenantId')?.toString();
-  const postId = form.get('postId')?.toString();
-  const file = form.get('file');
+  try {
+    // Authenticate the user
+    const auth = await requireAuth();
 
-  if (!tenantId || !file || !(file instanceof File)) {
-    return NextResponse.json({ error: 'tenantId and file required' }, { status: 400 });
-  }
+    // Rate limiting (stricter for uploads)
+    await requireRateLimit(auth.userId, 'upload');
 
-  const filename = file.name || 'upload.bin';
-  const key = `${tenantId}/${crypto.randomUUID()}-${filename}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+    // CSRF protection
+    await requireCsrfToken(req);
 
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: minioBucket,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type || 'application/octet-stream'
-    })
-  );
+    const form = await req.formData();
+    const tenantId = form.get('tenantId')?.toString();
+    const postId = form.get('postId')?.toString();
+    const file = form.get('file');
 
-  const asset = await prisma.asset.create({
-    data: {
-      tenantId,
-      postId: postId || null,
-      key,
-      url: '',
-      contentType: file.type || 'application/octet-stream',
-      size: buffer.length
+    if (!tenantId) {
+      throw new Error('TENANT_REQUIRED');
     }
-  });
 
-  await prisma.asset.update({
-    where: { id: asset.id },
-    data: { url: `/api/assets/${asset.id}` }
-  });
+    // Verify tenant access
+    requireTenantAccess(auth, tenantId);
 
-  return NextResponse.redirect(new URL(`/posts/${postId}?tenantId=${tenantId}`, req.url));
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json({ error: 'File is required' }, { status: 400 });
+    }
+
+    // Validate file
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    // Verify file signature matches declared type
+    const signatureCheck = await verifyFileSignature(file);
+    if (!signatureCheck.valid) {
+      return NextResponse.json({ error: signatureCheck.error }, { status: 400 });
+    }
+
+    // Generate secure storage key with sanitized filename
+    const key = generateStorageKey(tenantId, file.name);
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Upload to S3/MinIO
+    try {
+      const putParams: PutObjectCommandInput = {
+        Bucket: minioBucket,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+        // Add security headers
+        ContentDisposition: `attachment; filename="${sanitizeFilename(file.name)}"`
+      };
+
+      if (process.env.MINIO_SSE === 'true') {
+        putParams.ServerSideEncryption = 'AES256';
+      }
+
+      await s3Client.send(new PutObjectCommand(putParams));
+    } catch (error) {
+      console.error('S3 upload error:', error);
+      return NextResponse.json(
+        { error: 'Failed to upload file to storage' },
+        { status: 500 }
+      );
+    }
+
+    // Use transaction to create asset and audit log
+    const asset = await prisma.$transaction(async (tx) => {
+      const newAsset = await tx.asset.create({
+        data: {
+          tenantId,
+          postId: postId || null,
+          key,
+          url: '',
+          contentType: file.type,
+          size: buffer.length
+        }
+      });
+
+      const updatedAsset = await tx.asset.update({
+        where: { id: newAsset.id },
+        data: { url: `/api/assets/${newAsset.id}` }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          action: 'asset.upload',
+          entityType: 'asset',
+          entityId: updatedAsset.id,
+          payload: {
+            filename: sanitizeFilename(file.name),
+            size: buffer.length,
+            contentType: file.type,
+            userId: auth.userId
+          }
+        }
+      });
+
+      return updatedAsset;
+    });
+
+    if (postId) {
+      return NextResponse.redirect(new URL(`/posts/${postId}?tenantId=${tenantId}`, req.url));
+    }
+
+    return NextResponse.json(asset);
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
