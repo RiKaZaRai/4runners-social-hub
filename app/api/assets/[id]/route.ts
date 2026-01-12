@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { Readable } from 'stream';
 import { prisma } from '@/lib/db';
 import { minioBucket, s3Client } from '@/lib/minio';
 
@@ -22,8 +21,8 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
     return NextResponse.json({ error: 'Empty body' }, { status: 404 });
   }
 
-  const stream = Readable.toWeb(data.Body as Readable);
-  return new Response(stream, {
+  const body = data.Body as unknown as BodyInit;
+  return new Response(body, {
     headers: {
       'Content-Type': asset.contentType,
       'Content-Disposition': `inline; filename="${asset.key.split('/').pop()}"`
