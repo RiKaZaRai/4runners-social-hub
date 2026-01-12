@@ -1,10 +1,23 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function SelectTenantPage() {
   const session = await requireSession();
+
+  // Get user to check role
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { role: true }
+  });
+
+  // If user is agency_admin, redirect to admin dashboard
+  if (user?.role === 'agency_admin') {
+    redirect('/admin');
+  }
+
   const memberships = await prisma.tenantMembership.findMany({
     where: { userId: session.userId },
     include: { tenant: true }
