@@ -10,7 +10,13 @@ export default function LoginPage({
 }) {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f4efe8,_#f7e9d8,_#f0d9bf)] px-6 py-16">
-      <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+      <div className="mx-auto max-w-4xl space-y-6">
+        {searchParams.message && (
+          <div className="rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground">
+            {searchParams.message}
+          </div>
+        )}
+        <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Agence</CardTitle>
@@ -50,11 +56,9 @@ export default function LoginPage({
               <Input name="magicToken" type="text" placeholder="Magic token" required />
               <Button type="submit" size="sm" className="w-full">Se connecter avec magic link</Button>
             </form>
-            {searchParams.message && (
-              <p className="text-xs text-primary">{searchParams.message}</p>
-            )}
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
