@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { UserDeleteButton } from '@/components/user-delete-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,8 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
       select: { id: true, name: true }
     })
   ]);
+
+  const sessionUserId = session.userId;
 
   async function createUser(formData: FormData) {
     'use server';
@@ -97,6 +100,37 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
     }
   }
 
+  async function deleteUser(userId: string) {
+    'use server';
+
+    const session = await requireSession();
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (!currentUser || currentUser.role !== 'agency_admin') {
+      redirect('/home');
+    }
+
+    if (session.userId === userId) {
+      redirect('/teams?error=cannot_delete_self');
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.session.deleteMany({ where: { userId } });
+        await tx.magicLinkToken.deleteMany({ where: { userId } });
+        await tx.user.delete({ where: { id: userId } });
+      });
+
+      redirect('/teams?message=user_deleted');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      redirect('/teams?error=delete_failed');
+    }
+  }
+
   const showMessage = searchParams?.message;
   const showError = searchParams?.error;
 
@@ -118,7 +152,9 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
       {showMessage && (
         <Card className="border-emerald-500/40 bg-emerald-500/10 text-sm text-emerald-100">
           <CardContent className="py-3">
-            Utilisateur créé avec succès.
+            {showMessage === 'user_deleted'
+              ? 'Utilisateur supprimé avec succès.'
+              : 'Utilisateur créé avec succès.'}
           </CardContent>
         </Card>
       )}
@@ -126,7 +162,11 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
       {showError && (
         <Card className="border-rose-500/40 bg-rose-500/10 text-sm text-rose-100">
           <CardContent className="py-3">
-            Impossible de créer l'utilisateur. Vérifiez les champs ou l'email.
+            {showError === 'cannot_delete_self'
+              ? "Impossible de supprimer votre propre compte."
+              : showError === 'delete_failed'
+                ? "Impossible de supprimer l'utilisateur."
+                : "Impossible de créer l'utilisateur. Vérifiez les champs ou l'email."}
           </CardContent>
         </Card>
       )}
@@ -214,25 +254,44 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
               ))}
             </div>
           )}
-          {users.map((member) => (
+          {users.map((member) => {
+            const displayName =
+              [member.firstName, member.lastName].filter(Boolean).join(' ') ||
+              member.name ||
+              member.email;
+            const canDelete = member.id !== sessionUserId;
+
+            return (
             <div
               key={member.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm"
             >
               <div>
                 <div className="font-medium">
-                  {[member.firstName, member.lastName].filter(Boolean).join(' ') || member.name || member.email}
+                  {displayName}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {member.email}
                   {member.phone ? ` · ${member.phone}` : ''}
                 </div>
               </div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                {member.role}
+              <div className="flex items-center gap-3">
+                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  {member.role}
+                </div>
+                {canDelete ? (
+                  <UserDeleteButton
+                    userId={member.id}
+                    userName={displayName}
+                    onDelete={deleteUser}
+                  />
+                ) : (
+                  <span className="text-xs text-muted-foreground">Compte actuel</span>
+                )}
               </div>
             </div>
-          ))}
+          );
+          })}
           {users.length === 0 && (
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
               Aucun utilisateur pour le moment.
