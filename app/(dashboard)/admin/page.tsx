@@ -44,6 +44,9 @@ export default async function AdminDashboardPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button asChild>
+              <Link href="/admin/new-tenant">Nouveau Client</Link>
+            </Button>
             <Button variant="outline" asChild>
               <Link href="/admin/settings">Paramètres</Link>
             </Button>

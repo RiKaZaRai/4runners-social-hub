@@ -13,6 +13,11 @@ enum Role {
   client
 }
 
+enum TenantRole {
+  viewer
+  client_admin
+}
+
 enum PostStatus {
   draft
   pending_client
@@ -41,6 +46,9 @@ enum SocialNetwork {
   linkedin
   x
   tiktok
+  youtube
+  wordpress
+  google_my_business
 }
 
 enum JobStatus {
@@ -83,13 +91,15 @@ model User {
 }
 
 model TenantMembership {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   tenantId  String
   userId    String
-  createdAt DateTime @default(now())
+  role      TenantRole @default(viewer)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, userId])
 }

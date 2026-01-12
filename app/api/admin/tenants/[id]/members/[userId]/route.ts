@@ -1,0 +1,110 @@
+import { NextResponse } from 'next/server';
+import { requireSession } from '@/lib/auth';
+import { requireCsrfToken } from '@/lib/csrf';
+import { prisma } from '@/lib/db';
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string; userId: string } }
+) {
+  try {
+    // Verify session
+    const session = await requireSession();
+
+    // CSRF protection
+    await requireCsrfToken(req);
+
+    // Verify user is agency_admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (user?.role !== 'agency_admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Parse request body
+    const body = await req.json();
+    const { role } = body;
+
+    if (!role) {
+      return NextResponse.json({ error: 'role is required' }, { status: 400 });
+    }
+
+    if (role !== 'viewer' && role !== 'client_admin') {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+    }
+
+    // Update membership role
+    const membership = await prisma.tenantMembership.update({
+      where: {
+        tenantId_userId: {
+          tenantId: params.id,
+          userId: params.userId
+        }
+      },
+      data: { role },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, role: true }
+        }
+      }
+    });
+
+    return NextResponse.json(membership);
+  } catch (error) {
+    console.error('Error updating member role:', error);
+
+    // Handle not found
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+      return NextResponse.json({ error: 'Membership not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string; userId: string } }
+) {
+  try {
+    // Verify session
+    const session = await requireSession();
+
+    // CSRF protection
+    await requireCsrfToken(req);
+
+    // Verify user is agency_admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (user?.role !== 'agency_admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Delete membership
+    await prisma.tenantMembership.delete({
+      where: {
+        tenantId_userId: {
+          tenantId: params.id,
+          userId: params.userId
+        }
+      }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error removing member:', error);
+
+    // Handle not found
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+      return NextResponse.json({ error: 'Membership not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

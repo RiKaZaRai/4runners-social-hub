@@ -30,6 +30,9 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
           }
         }
       },
+      channels: {
+        orderBy: { createdAt: 'desc' }
+      },
       posts: {
         take: 10,
         orderBy: { createdAt: 'desc' },
@@ -42,7 +45,8 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
       _count: {
         select: {
           posts: true,
-          memberships: true
+          memberships: true,
+          channels: true
         }
       }
     }
@@ -71,11 +75,11 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" asChild>
-                <Link href={`/posts?tenantId=${tenant.id}`}>Voir comme client</Link>
-              </Button>
               <Button asChild>
-                <Link href={`/admin/${tenant.id}/settings`}>Paramètres</Link>
+                <Link href={`/posts?tenantId=${tenant.id}`}>Gérer les posts</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href={`/admin/${tenant.id}/edit`}>Modifier</Link>
               </Button>
             </div>
           </div>
@@ -101,17 +105,15 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Commentaires</CardTitle>
+              <CardTitle className="text-sm font-medium">Réseaux sociaux</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">
-                {tenant.posts.reduce((sum, p) => sum + p._count.comments, 0)}
-              </p>
+              <p className="text-3xl font-bold">{tenant._count.channels}</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-3">
           {/* Members */}
           <Card>
             <CardHeader>
@@ -132,8 +134,8 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
                         <p className="font-medium">{membership.user.name || membership.user.email}</p>
                         <p className="text-sm text-muted-foreground">{membership.user.email}</p>
                       </div>
-                      <Badge variant={membership.user.role === 'agency_admin' ? 'accent' : 'outline'}>
-                        {membership.user.role}
+                      <Badge variant={membership.role === 'client_admin' ? 'accent' : 'outline'}>
+                        {membership.role === 'viewer' ? 'Viewer' : 'Client Admin'}
                       </Badge>
                     </div>
                   ))
@@ -141,6 +143,39 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
               </div>
               <Button className="mt-4 w-full" variant="outline" asChild>
                 <Link href={`/admin/${tenant.id}/members`}>Gérer les membres</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Social Networks */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Réseaux sociaux</CardTitle>
+              <CardDescription>Réseaux configurés pour ce client</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {tenant.channels.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucun réseau configuré</p>
+                ) : (
+                  tenant.channels.map((channel) => (
+                    <div
+                      key={channel.id}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
+                      <div>
+                        <p className="font-medium capitalize">{channel.network.replace('_', ' ')}</p>
+                        {channel.handle && (
+                          <p className="text-sm text-muted-foreground">{channel.handle}</p>
+                        )}
+                      </div>
+                      <Badge variant="outline">{channel.network}</Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+              <Button className="mt-4 w-full" variant="outline" asChild>
+                <Link href={`/admin/${tenant.id}/channels`}>Gérer les réseaux</Link>
               </Button>
             </CardContent>
           </Card>
