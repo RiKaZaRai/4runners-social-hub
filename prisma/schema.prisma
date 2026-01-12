@@ -101,6 +101,9 @@ model MagicLinkToken {
   email     String
   expiresAt DateTime
   createdAt DateTime @default(now())
+  userId    String?
+
+  user User? @relation(fields: [userId], references: [id])
 }
 
 model Post {

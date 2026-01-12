@@ -6,6 +6,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
 RUN corepack enable
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --no-frozen-lockfile
