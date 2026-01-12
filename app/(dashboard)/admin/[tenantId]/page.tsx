@@ -160,7 +160,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
                     <div key={post.id} className="rounded-lg border p-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="font-medium line-clamp-1">{post.content}</p>
+                          <p className="font-medium line-clamp-1">{post.title || post.body}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {new Date(post.createdAt).toLocaleDateString('fr-FR')} •{' '}
                             {post._count.comments} commentaire(s)
