@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CsrfInput } from '@/components/csrf-input';
 
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage({
   searchParams
 }: {
