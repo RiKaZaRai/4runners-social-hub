@@ -4,7 +4,8 @@ import { Readable } from 'stream';
 import { prisma } from '@/lib/db';
 import { minioBucket, s3Client } from '@/lib/minio';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   const asset = await prisma.asset.findUnique({ where: { id: params.id } });
   if (!asset) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
