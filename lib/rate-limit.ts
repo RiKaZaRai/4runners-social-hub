@@ -1,4 +1,4 @@
-import { redis } from '@/lib/redis';
+import { redis, ensureRedisConnected } from '@/lib/redis';
 
 interface RateLimitConfig {
   maxRequests: number;
@@ -26,6 +26,7 @@ export async function checkRateLimit(
   const windowStart = now - config.windowMs;
 
   try {
+    await ensureRedisConnected();
     // Remove old entries outside the window
     await redis.zremrangebyscore(key, 0, windowStart);
 
