@@ -5,9 +5,10 @@ import { prisma } from '@/lib/db';
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string; channelId: string } }
+  { params }: { params: Promise<{ id: string; channelId: string }> }
 ) {
   try {
+    const { id, channelId } = await params;
     // Verify session
     const session = await requireSession();
 
@@ -30,16 +31,16 @@ export async function PATCH(
 
     // Verify channel belongs to the tenant
     const existingChannel = await prisma.tenantChannel.findUnique({
-      where: { id: params.channelId }
+      where: { id: channelId }
     });
 
-    if (!existingChannel || existingChannel.tenantId !== params.id) {
+    if (!existingChannel || existingChannel.tenantId !== id) {
       return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
     }
 
     // Update channel
     const channel = await prisma.tenantChannel.update({
-      where: { id: params.channelId },
+      where: { id: channelId },
       data: {
         handle: handle !== undefined ? handle || null : undefined,
         url: url !== undefined ? url || null : undefined
@@ -61,9 +62,10 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string; channelId: string } }
+  { params }: { params: Promise<{ id: string; channelId: string }> }
 ) {
   try {
+    const { id, channelId } = await params;
     // Verify session
     const session = await requireSession();
 
@@ -82,16 +84,16 @@ export async function DELETE(
 
     // Verify channel belongs to the tenant
     const existingChannel = await prisma.tenantChannel.findUnique({
-      where: { id: params.channelId }
+      where: { id: channelId }
     });
 
-    if (!existingChannel || existingChannel.tenantId !== params.id) {
+    if (!existingChannel || existingChannel.tenantId !== id) {
       return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
     }
 
     // Delete channel
     await prisma.tenantChannel.delete({
-      where: { id: params.channelId }
+      where: { id: channelId }
     });
 
     return NextResponse.json({ success: true });

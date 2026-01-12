@@ -3,8 +3,12 @@ import { requireSession } from '@/lib/auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { prisma } from '@/lib/db';
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     // Verify session
     const session = await requireSession();
 
@@ -31,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     // Update tenant
     const tenant = await prisma.tenant.update({
-      where: { id: params.id },
+      where: { id },
       data: { name: name.trim() }
     });
 
@@ -42,8 +46,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     // Verify session
     const session = await requireSession();
 
@@ -62,7 +70,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     // Delete tenant (cascading will delete related records)
     await prisma.tenant.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json({ success: true });

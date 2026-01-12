@@ -5,9 +5,10 @@ import { prisma } from '@/lib/db';
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
+    const { id, userId } = await params;
     // Verify session
     const session = await requireSession();
 
@@ -40,8 +41,8 @@ export async function PATCH(
     const membership = await prisma.tenantMembership.update({
       where: {
         tenantId_userId: {
-          tenantId: params.id,
-          userId: params.userId
+          tenantId: id,
+          userId
         }
       },
       data: { role },
@@ -67,9 +68,10 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
+    const { id, userId } = await params;
     // Verify session
     const session = await requireSession();
 
@@ -90,8 +92,8 @@ export async function DELETE(
     await prisma.tenantMembership.delete({
       where: {
         tenantId_userId: {
-          tenantId: params.id,
-          userId: params.userId
+          tenantId: id,
+          userId
         }
       }
     });

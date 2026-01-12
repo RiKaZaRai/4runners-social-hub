@@ -14,8 +14,12 @@ const VALID_NETWORKS = [
   'google_my_business'
 ] as const;
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     // Verify session
     const session = await requireSession();
 
@@ -46,7 +50,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     // Verify tenant exists
     const tenant = await prisma.tenant.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!tenant) {
@@ -56,7 +60,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     // Create channel
     const channel = await prisma.tenantChannel.create({
       data: {
-        tenantId: params.id,
+        tenantId: id,
         network,
         handle: handle || null,
         url: url || null

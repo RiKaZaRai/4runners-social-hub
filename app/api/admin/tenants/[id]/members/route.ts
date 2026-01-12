@@ -3,8 +3,12 @@ import { requireSession } from '@/lib/auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { prisma } from '@/lib/db';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     // Verify session
     const session = await requireSession();
 
@@ -35,7 +39,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     // Verify tenant exists
     const tenant = await prisma.tenant.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!tenant) {
@@ -54,7 +58,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     // Create membership
     const membership = await prisma.tenantMembership.create({
       data: {
-        tenantId: params.id,
+        tenantId: id,
         userId,
         role
       },
