@@ -135,6 +135,14 @@ export async function POST(req: Request) {
     });
     if (envAdminEmail && envAdminPassword && email === envAdminEmail) {
       console.log('[LOGIN] Admin bypass - checking password');
+      console.log('[LOGIN] Password comparison:', {
+        receivedLength: password.length,
+        expectedLength: envAdminPassword.length,
+        receivedFirst5: password.substring(0, 5),
+        expectedFirst5: envAdminPassword.substring(0, 5),
+        receivedLast5: password.substring(password.length - 5),
+        expectedLast5: envAdminPassword.substring(envAdminPassword.length - 5)
+      });
       if (password !== envAdminPassword) {
         console.log('[LOGIN] Admin bypass - password mismatch');
         return NextResponse.redirect(new URL('/login?message=Identifiants+invalides', req.url));
