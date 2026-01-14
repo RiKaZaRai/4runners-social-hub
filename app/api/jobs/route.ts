@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { enqueueDeleteRemote, enqueuePublish, enqueueSyncComments } from '@/lib/jobs';
 import { buildIdempotencyKey } from '@/lib/workflow';
-import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
     // If tenantId is provided, verify access and filter by it
     if (tenantId) {
-      requireTenantAccess(auth, tenantId);
+      await requireActiveTenantAccess(auth, tenantId);
 
       const jobs = await prisma.outboxJob.findMany({
         where: { tenantId },
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, tenantId);
+    await requireActiveTenantAccess(auth, tenantId);
 
     if (type === 'publish' && postId && provider) {
       const post = await prisma.post.findUnique({ where: { id: postId } });

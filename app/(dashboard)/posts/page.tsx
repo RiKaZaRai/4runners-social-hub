@@ -80,6 +80,17 @@ export default async function PostsPage({
   const isAdmin = isAgencyAdmin(role);
   const isManager = isAgencyManager(role);
 
+  // Verify tenant exists and is active
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { active: true }
+  });
+
+  // If tenant doesn't exist or is inactive, redirect (unless admin)
+  if (!tenant || (!isAdmin && !tenant.active)) {
+    redirect('/select-tenant');
+  }
+
   const membership = await prisma.tenantMembership.findUnique({
     where: { tenantId_userId: { tenantId, userId: session.userId } }
   });

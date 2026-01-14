@@ -80,6 +80,32 @@ export function requireTenantAccess(auth: AuthenticatedRequest, tenantId: string
   }
 }
 
+/**
+ * Verify that the user has access to the specified tenant AND that the tenant is active
+ * For client users, inactive tenants are not accessible
+ */
+export async function requireActiveTenantAccess(
+  auth: AuthenticatedRequest,
+  tenantId: string | null | undefined
+): Promise<void> {
+  requireTenantAccess(auth, tenantId);
+
+  // Agency admins can access inactive tenants
+  if (isAgencyAdmin(auth.role)) {
+    return;
+  }
+
+  // For non-admins, check if tenant is active
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId! },
+    select: { active: true }
+  });
+
+  if (!tenant || !tenant.active) {
+    throw new Error('TENANT_INACTIVE');
+  }
+}
+
 export function requireAgency(auth: AuthenticatedRequest): void {
   if (isClientRole(auth.role)) {
     throw new Error('FORBIDDEN');
@@ -96,6 +122,8 @@ export function handleApiError(error: unknown): NextResponse {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       case 'FORBIDDEN':
         return NextResponse.json({ error: 'Access denied to this tenant' }, { status: 403 });
+      case 'TENANT_INACTIVE':
+        return NextResponse.json({ error: 'This client account is currently inactive' }, { status: 403 });
       case 'TENANT_REQUIRED':
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
       case 'INVALID_INPUT':

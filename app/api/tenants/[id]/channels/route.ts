@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { networkSchema } from '@/lib/validators';
-import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -16,7 +16,7 @@ export async function POST(
     requireAgency(auth);
     await requireCsrfToken(req);
 
-    requireTenantAccess(auth, resolvedParams.id);
+    await requireActiveTenantAccess(auth, resolvedParams.id);
 
     const form = await req.formData();
     const network = form.get('network')?.toString();

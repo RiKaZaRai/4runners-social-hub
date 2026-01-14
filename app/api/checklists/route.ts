@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { checklistSchema } from '@/lib/validators';
-import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, post.tenantId);
+    await requireActiveTenantAccess(auth, post.tenantId);
 
     const item = await prisma.$transaction(async (tx) => {
       const newItem = await tx.checklistItem.create({
@@ -109,7 +109,7 @@ export async function PATCH(req: Request) {
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, existing.post.tenantId);
+    await requireActiveTenantAccess(auth, existing.post.tenantId);
 
     const item = await prisma.$transaction(async (tx) => {
       const updatedItem = await tx.checklistItem.update({

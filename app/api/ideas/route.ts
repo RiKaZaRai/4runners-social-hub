@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { ideaSchema } from '@/lib/validators';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     const tenantId = searchParams.get('tenantId');
 
     // Verify tenant access
-    requireTenantAccess(auth, tenantId);
+    await requireActiveTenantAccess(auth, tenantId);
 
     const ideas = await prisma.idea.findMany({
       where: { tenantId: tenantId! },
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, parsed.data.tenantId);
+    await requireActiveTenantAccess(auth, parsed.data.tenantId);
 
     const idea = await prisma.$transaction(async (tx) => {
       const newIdea = await tx.idea.create({
@@ -112,7 +112,7 @@ export async function PATCH(req: Request) {
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, existing.tenantId);
+    await requireActiveTenantAccess(auth, existing.tenantId);
 
     const idea = await prisma.$transaction(async (tx) => {
       const updatedIdea = await tx.idea.update({

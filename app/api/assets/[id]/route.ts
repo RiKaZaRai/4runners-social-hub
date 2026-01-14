@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { prisma } from '@/lib/db';
 import { minioBucket, s3Client } from '@/lib/minio';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireRateLimit } from '@/lib/rate-limit';
 import { sanitizeFilename } from '@/lib/file-validation';
 
@@ -26,7 +26,7 @@ export async function GET(
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, asset.tenantId);
+    await requireActiveTenantAccess(auth, asset.tenantId);
 
     // Fetch from S3/MinIO
     let data;

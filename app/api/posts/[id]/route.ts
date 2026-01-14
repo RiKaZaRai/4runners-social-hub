@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { updatePostSchema } from '@/lib/validators';
 import { canTransition } from '@/lib/workflow';
 import { enqueueDeleteRemote } from '@/lib/jobs';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 import { isClientRole } from '@/lib/roles';
@@ -28,7 +28,7 @@ export async function GET(
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, post.tenantId);
+    await requireActiveTenantAccess(auth, post.tenantId);
 
     return NextResponse.json(post);
   } catch (error) {
@@ -59,7 +59,7 @@ export async function PATCH(
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, existing.tenantId);
+    await requireActiveTenantAccess(auth, existing.tenantId);
 
     const form = await req.formData();
     const data = {
@@ -170,7 +170,7 @@ export async function DELETE(
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, existing.tenantId);
+    await requireActiveTenantAccess(auth, existing.tenantId);
 
     // Use a transaction for consistency
     const post = await prisma.$transaction(async (tx) => {

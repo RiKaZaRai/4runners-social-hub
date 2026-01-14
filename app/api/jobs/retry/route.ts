@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { enqueueDeleteRemote, enqueuePublish, enqueueSyncComments } from '@/lib/jobs';
-import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, outbox.tenantId);
+    await requireActiveTenantAccess(auth, outbox.tenantId);
 
     await prisma.$transaction(async (tx) => {
       await tx.outboxJob.update({

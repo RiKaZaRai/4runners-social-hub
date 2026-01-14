@@ -22,7 +22,10 @@ export default async function SelectTenantPage() {
   }
 
   const memberships = await prisma.tenantMembership.findMany({
-    where: { userId: session.userId },
+    where: {
+      userId: session.userId,
+      tenant: { active: true } // Only show active tenants
+    },
     include: { tenant: true }
   });
 

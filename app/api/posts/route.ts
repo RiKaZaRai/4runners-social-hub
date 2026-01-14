@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createPostSchema } from '@/lib/validators';
 import { prisma } from '@/lib/db';
-import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     const tenantId = searchParams.get('tenantId');
 
     // Verify tenant access
-    requireTenantAccess(auth, tenantId);
+    await requireActiveTenantAccess(auth, tenantId);
 
     const posts = await prisma.post.findMany({
       where: { tenantId: tenantId! },
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, parsed.data.tenantId);
+    await requireActiveTenantAccess(auth, parsed.data.tenantId);
 
     // Use a transaction to ensure data consistency
     const post = await prisma.$transaction(async (tx) => {

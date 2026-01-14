@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { PutObjectCommand, type PutObjectCommandInput } from '@aws-sdk/client-s3';
 import { prisma } from '@/lib/db';
 import { minioBucket, s3Client } from '@/lib/minio';
-import { requireAuth, requireAgency, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireAgency, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 import {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     }
 
     // Verify tenant access
-    requireTenantAccess(auth, tenantId);
+    await requireActiveTenantAccess(auth, tenantId);
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: 'File is required' }, { status: 400 });

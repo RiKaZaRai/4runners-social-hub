@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { postStatusSchema } from '@/lib/validators';
 import { canTransition } from '@/lib/workflow';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 import { isClientRole } from '@/lib/roles';
@@ -37,7 +37,7 @@ export async function POST(
       throw new Error('NOT_FOUND');
     }
 
-    requireTenantAccess(auth, post.tenantId);
+    await requireActiveTenantAccess(auth, post.tenantId);
 
     if (isClientRole(auth.role) && !clientAllowedStatuses.includes(parsed.data)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });

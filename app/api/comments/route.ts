@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { commentSchema } from '@/lib/validators';
-import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { requireAuth, requireActiveTenantAccess, handleApiError } from '@/lib/api-auth';
 import { isClientRole } from '@/lib/roles';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
@@ -40,8 +40,8 @@ export async function POST(req: Request) {
       throw new Error('NOT_FOUND');
     }
 
-    // Verify tenant access
-    requireTenantAccess(auth, post.tenantId);
+    // Verify tenant access (also checks if tenant is active)
+    await requireActiveTenantAccess(auth, post.tenantId);
 
     const comment = await prisma.$transaction(async (tx) => {
       const newComment = await tx.comment.create({
