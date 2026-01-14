@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, Building2, Home, Users } from 'lucide-react';
+import { AlertTriangle, Building2, Home, Inbox, Users } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/home">
                 <Home className="h-4 w-4" />
                 Accueil
+              </Link>
+              <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/inbox">
+                <Inbox className="h-4 w-4" />
+                Inbox
               </Link>
               <Link
                 className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"
