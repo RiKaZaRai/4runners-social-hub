@@ -110,43 +110,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card px-3 py-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  Comptes
-                </p>
-                {canCreateClients(currentUser?.role) && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/admin/new-tenant">Nouveau</Link>
-                  </Button>
-                )}
-              </div>
-              <ul className="mt-3 space-y-3 text-sm">
-                {tenants.map((tenant) => (
-                  <li key={tenant.id} className="space-y-1">
-                    <Link
-                      className="block rounded-md px-2 py-1 text-primary hover:bg-muted"
-                      href={`/posts?tenantId=${tenant.id}`}
-                    >
-                      {tenant.name}
-                    </Link>
-                    <div className="flex gap-3 px-2 text-xs text-muted-foreground">
-                      <Link className="hover:text-foreground" href={`/posts?tenantId=${tenant.id}`}>
-                        Posts
-                      </Link>
-                      <Link className="hover:text-foreground" href={`/ideas?tenantId=${tenant.id}`}>
-                        Idees
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-                {tenants.length === 0 && (
-                  <li className="rounded-md border border-dashed border-border px-2 py-2 text-xs text-muted-foreground">
-                    Aucun client pour le moment.
-                  </li>
-                )}
-              </ul>
-            </div>
           </nav>
         </aside>
 
