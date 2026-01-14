@@ -78,12 +78,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   Espaces
                 </p>
-                <Link
-                  className="text-xs font-medium text-primary hover:underline"
-                  href="/spaces"
-                >
-                  Voir tous
-                </Link>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/spaces/new">Nouveau</Link>
+                </Button>
               </div>
               <ul className="mt-3 space-y-2 text-sm">
                 {spacesPreview.map((space) => (
