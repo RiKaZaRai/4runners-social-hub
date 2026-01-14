@@ -26,6 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const tenants = isAdmin
     ? await prisma.tenant.findMany({ orderBy: { name: 'asc' } })
     : memberships.map((membership) => membership.tenant);
+  const spacesPreview = tenants.slice(0, 5);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -53,7 +54,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </Link>
               <Link
                 className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"
-                href={isClient ? '/posts' : '/clients'}
+                href={isClient ? '/posts' : '/spaces'}
               >
                 <Building2 className="h-4 w-4" />
                 Espaces
@@ -70,6 +71,43 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   Jobs / erreurs
                 </Link>
               )}
+            </div>
+
+            <div className="rounded-xl border border-border bg-card px-3 py-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Espaces
+                </p>
+                <Link
+                  className="text-xs font-medium text-primary hover:underline"
+                  href="/spaces"
+                >
+                  Voir tous
+                </Link>
+              </div>
+              <ul className="mt-3 space-y-2 text-sm">
+                {spacesPreview.map((space) => (
+                  <li key={space.id}>
+                    <Link
+                      className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted"
+                      href={`/spaces/${space.id}/overview`}
+                    >
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="flex-1 truncate">{space.name}</span>
+                    </Link>
+                  </li>
+                ))}
+                {spacesPreview.length === 0 && (
+                  <li className="rounded-md border border-dashed border-border px-2 py-2 text-xs text-muted-foreground">
+                    Aucun espace.
+                  </li>
+                )}
+              </ul>
+              <div className="mt-2 text-xs text-muted-foreground">
+                <Link className="text-primary hover:underline" href="/spaces">
+                  Voir tous les espaces →
+                </Link>
+              </div>
             </div>
 
             <div className="rounded-xl border border-border bg-card px-3 py-3">
