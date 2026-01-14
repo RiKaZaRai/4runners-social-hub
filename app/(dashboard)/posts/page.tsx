@@ -78,6 +78,7 @@ export default async function PostsPage({
   const isClient = isClientRole(role);
   const isAgency = isAgencyRole(role);
   const isAdmin = isAgencyAdmin(role);
+  const isManager = isAgencyManager(role);
 
   const membership = await prisma.tenantMembership.findUnique({
     where: { tenantId_userId: { tenantId, userId: session.userId } }
