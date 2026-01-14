@@ -242,7 +242,7 @@ export default async function ClientsPage({
                     <span className="flex items-center gap-2">
                       {tenant.name}
                       {!tenant.active && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="default" className="text-xs">
                           Inactif
                         </Badge>
                       )}
