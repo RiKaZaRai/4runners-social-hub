@@ -12,9 +12,24 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const themeInitScript = `
+    (function () {
+      try {
+        const stored = window.localStorage.getItem('theme');
+        const theme = stored === 'dark' || stored === 'light' ? stored : 'dark';
+        const root = document.documentElement;
+        root.classList.toggle('dark', theme === 'dark');
+        root.dataset.theme = theme;
+      } catch (e) {
+        // fail silently
+      }
+    })();
+  `;
+
   return (
-    <html lang="fr">
-      <body>
+    <html lang="fr" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <Providers>{children}</Providers>
       </body>
     </html>
