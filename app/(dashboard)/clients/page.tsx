@@ -6,6 +6,7 @@ import { getCsrfToken } from '@/lib/csrf';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { CsrfInput } from '@/components/csrf-input';
 import {
   canCreateClients,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/roles';
 import crypto from 'crypto';
 import { TenantDeleteButton } from '@/components/tenant-delete-button';
+import { TenantToggleButton } from '@/components/tenant-toggle-button';
 
 export default async function ClientsPage({
   searchParams
@@ -162,6 +164,42 @@ export default async function ClientsPage({
     revalidatePath('/posts');
   }
 
+  async function toggleTenantActive(tenantId: string, active: boolean) {
+    'use server';
+
+    const session = await requireSession();
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (!currentUser || !isAgencyAdmin(currentUser.role)) {
+      redirect('/posts');
+    }
+
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { active }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorId: session.userId,
+        action: active ? 'tenant.activate' : 'tenant.deactivate',
+        entityType: 'tenant',
+        entityId: tenantId,
+        payload: { active }
+      }
+    });
+
+    revalidatePath('/clients');
+    revalidatePath('/clients', 'layout');
+    revalidatePath('/home');
+    revalidatePath('/home', 'layout');
+    revalidatePath('/posts');
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -195,20 +233,35 @@ export default async function ClientsPage({
                   key={tenant.id}
                   className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 transition ${
                     tenant.id === activeTenantId ? 'bg-muted/70' : 'hover:bg-muted'
-                  }`}
+                  } ${!tenant.active ? 'opacity-60' : ''}`}
                 >
                   <a
                     href={`/clients?tenantId=${tenant.id}`}
                     className="min-w-0 flex-1 truncate text-sm"
                   >
-                    {tenant.name}
+                    <span className="flex items-center gap-2">
+                      {tenant.name}
+                      {!tenant.active && (
+                        <Badge variant="secondary" className="text-xs">
+                          Inactif
+                        </Badge>
+                      )}
+                    </span>
                   </a>
                   {isAdmin && (
-                    <TenantDeleteButton
-                      tenantId={tenant.id}
-                      tenantName={tenant.name}
-                      onDelete={deleteTenant}
-                    />
+                    <div className="flex items-center gap-1">
+                      <TenantToggleButton
+                        tenantId={tenant.id}
+                        tenantName={tenant.name}
+                        active={tenant.active}
+                        onToggle={toggleTenantActive}
+                      />
+                      <TenantDeleteButton
+                        tenantId={tenant.id}
+                        tenantName={tenant.name}
+                        onDelete={deleteTenant}
+                      />
+                    </div>
                   )}
                 </div>
               ))}
