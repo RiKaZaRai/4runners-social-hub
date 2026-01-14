@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { isAgencyAdmin, isAgencyRole } from '@/lib/roles';
 
 export default async function SelectTenantPage() {
   const session = await requireSession();
@@ -13,9 +14,11 @@ export default async function SelectTenantPage() {
     select: { role: true }
   });
 
-  // If user is agency_admin, redirect to admin dashboard
-  if (user?.role === 'agency_admin') {
+  if (isAgencyAdmin(user?.role)) {
     redirect('/admin');
+  }
+  if (isAgencyRole(user?.role)) {
+    redirect('/clients');
   }
 
   const memberships = await prisma.tenantMembership.findMany({

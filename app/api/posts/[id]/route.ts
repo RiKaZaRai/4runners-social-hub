@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { updatePostSchema } from '@/lib/validators';
 import { canTransition } from '@/lib/workflow';
@@ -6,8 +6,12 @@ import { enqueueDeleteRemote } from '@/lib/jobs';
 import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
+import { isClientRole } from '@/lib/roles';
 
-export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const params = await context.params;
 
@@ -32,7 +36,10 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
   }
 }
 
-export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const params = await context.params;
 
@@ -69,7 +76,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    if (auth.role === 'client') {
+    if (isClientRole(auth.role)) {
       const isUpdatingFields =
         parsed.data.title ||
         parsed.data.body ||
@@ -137,13 +144,16 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   }
 }
 
-export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const params = await context.params;
 
     // Authenticate the user
     const auth = await requireAuth();
-    if (auth.role === 'client') {
+    if (isClientRole(auth.role)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

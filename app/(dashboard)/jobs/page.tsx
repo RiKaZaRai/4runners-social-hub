@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CsrfInput } from '@/components/csrf-input';
+import { isClientRole } from '@/lib/roles';
 
 export default async function JobsPage() {
   const session = await requireSession();
@@ -12,7 +13,7 @@ export default async function JobsPage() {
     where: { id: session.userId },
     select: { role: true }
   });
-  if (!currentUser || currentUser.role === 'client') {
+  if (!currentUser || isClientRole(currentUser.role)) {
     redirect('/posts');
   }
 

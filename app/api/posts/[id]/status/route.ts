@@ -1,14 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { postStatusSchema } from '@/lib/validators';
 import { canTransition } from '@/lib/workflow';
 import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
+import { isClientRole } from '@/lib/roles';
 
 const clientAllowedStatuses = ['approved', 'changes_requested'];
 
-export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const auth = await requireAuth();
     await requireRateLimit(auth.userId, 'api');
@@ -35,7 +39,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
 
     requireTenantAccess(auth, post.tenantId);
 
-    if (auth.role === 'client' && !clientAllowedStatuses.includes(parsed.data)) {
+    if (isClientRole(auth.role) && !clientAllowedStatuses.includes(parsed.data)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

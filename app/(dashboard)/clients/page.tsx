@@ -7,6 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CsrfInput } from '@/components/csrf-input';
+import {
+  canCreateClients,
+  isAgencyAdmin,
+  isAgencyManager,
+  isAgencyProduction,
+  isClientRole
+} from '@/lib/roles';
 import crypto from 'crypto';
 import { TenantDeleteButton } from '@/components/tenant-delete-button';
 
@@ -17,11 +24,21 @@ export default async function ClientsPage({
 }) {
   const session = await requireSession();
   const currentUser = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!currentUser || currentUser.role === 'client') {
+  if (!currentUser || isClientRole(currentUser.role)) {
     redirect('/posts');
   }
 
+  const isAdmin = isAgencyAdmin(currentUser.role);
+  const isManager = isAgencyManager(currentUser.role);
+  const isProduction = isAgencyProduction(currentUser.role);
+
+  const memberships = await prisma.tenantMembership.findMany({
+    where: { userId: session.userId },
+    select: { tenantId: true }
+  });
+
   const tenants = await prisma.tenant.findMany({
+    where: isAdmin ? {} : { id: { in: memberships.map((m) => m.tenantId) } },
     orderBy: { createdAt: 'desc' },
     include: { channels: true }
   });
@@ -38,7 +55,7 @@ export default async function ClientsPage({
       select: { role: true }
     });
 
-    if (!currentUser || currentUser.role === 'client') {
+    if (!currentUser || isClientRole(currentUser.role) || !canCreateClients(currentUser.role)) {
       redirect('/posts');
     }
 
@@ -62,7 +79,7 @@ export default async function ClientsPage({
         data: {
           tenantId: created.id,
           userId: session.userId,
-          role: 'client_admin'
+          role: 'viewer'
         }
       });
 
@@ -95,7 +112,7 @@ export default async function ClientsPage({
       select: { role: true }
     });
 
-    if (!currentUser || currentUser.role === 'client') {
+    if (!currentUser || !isAgencyAdmin(currentUser.role)) {
       redirect('/posts');
     }
 
@@ -161,11 +178,17 @@ export default async function ClientsPage({
             <CardTitle>Nouveau client</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form action={createTenant} className="space-y-3">
-              <CsrfInput />
-              <Input name="name" placeholder="Nom du client" required />
-              <Button type="submit">Creer</Button>
-            </form>
+            {canCreateClients(currentUser.role) ? (
+              <form action={createTenant} className="space-y-3">
+                <CsrfInput />
+                <Input name="name" placeholder="Nom du client" required />
+                <Button type="submit">Creer</Button>
+              </form>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Vous n’avez pas l’autorisation de créer un client.
+              </p>
+            )}
             <div className="space-y-2 text-sm">
               {tenants.map((tenant) => (
                 <div
@@ -180,11 +203,13 @@ export default async function ClientsPage({
                   >
                     {tenant.name}
                   </a>
-                  <TenantDeleteButton
-                    tenantId={tenant.id}
-                    tenantName={tenant.name}
-                    onDelete={deleteTenant}
-                  />
+                  {isAdmin && (
+                    <TenantDeleteButton
+                      tenantId={tenant.id}
+                      tenantName={tenant.name}
+                      onDelete={deleteTenant}
+                    />
+                  )}
                 </div>
               ))}
               {tenants.length === 0 && (
@@ -218,28 +243,34 @@ export default async function ClientsPage({
                   )}
                 </div>
 
-                <form
-                  action={`/api/tenants/${activeTenant.id}/channels`}
-                  method="post"
-                  className="space-y-3"
-                >
-                  <CsrfInput />
-                  <label className="block text-sm text-muted-foreground">Reseau</label>
-                  <select
-                    name="network"
-                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                    defaultValue="linkedin"
+                {isAdmin || isManager ? (
+                  <form
+                    action={`/api/tenants/${activeTenant.id}/channels`}
+                    method="post"
+                    className="space-y-3"
                   >
-                    <option value="linkedin">LinkedIn</option>
-                    <option value="instagram">Instagram</option>
-                    <option value="facebook">Facebook</option>
-                    <option value="x">X</option>
-                    <option value="tiktok">TikTok</option>
-                  </select>
-                  <Input name="handle" placeholder="@handle" />
-                  <Input name="url" placeholder="URL du profil" />
-                  <Button type="submit">Ajouter / Mettre a jour</Button>
-                </form>
+                    <CsrfInput />
+                    <label className="block text-sm text-muted-foreground">Reseau</label>
+                    <select
+                      name="network"
+                      className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                      defaultValue="linkedin"
+                    >
+                      <option value="linkedin">LinkedIn</option>
+                      <option value="instagram">Instagram</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="x">X</option>
+                      <option value="tiktok">TikTok</option>
+                    </select>
+                    <Input name="handle" placeholder="@handle" />
+                    <Input name="url" placeholder="URL du profil" />
+                    <Button type="submit">Ajouter / Mettre a jour</Button>
+                  </form>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Les reseaux sont gerables par l’agence uniquement.
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-sm text-muted-foreground">Selectionnez un client.</p>

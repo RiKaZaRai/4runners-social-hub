@@ -11,6 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { CsrfInput } from '@/components/csrf-input';
+import {
+  isAgencyAdmin,
+  isAgencyManager,
+  isAgencyProduction,
+  isAgencyRole,
+  isClientRole
+} from '@/lib/roles';
 
 function lineDiff(before: string, after: string) {
   const a = (before ?? '').split('\n');
@@ -66,7 +73,19 @@ export default async function PostsPage({
     where: { id: session.userId },
     select: { role: true }
   });
-  const isClient = currentUser?.role === 'client';
+  if (!currentUser) redirect('/login');
+  const role = currentUser.role;
+  const isClient = isClientRole(role);
+  const isAgency = isAgencyRole(role);
+  const isAdmin = isAgencyAdmin(role);
+
+  const membership = await prisma.tenantMembership.findUnique({
+    where: { tenantId_userId: { tenantId, userId: session.userId } }
+  });
+
+  if (!isAdmin && !membership) {
+    redirect('/select-tenant');
+  }
 
   const posts = await prisma.post.findMany({
     where: { tenantId },
@@ -110,7 +129,7 @@ export default async function PostsPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {!isClient && (
+          {isAgency && (
             <>
               <Link
                 className="text-sm text-primary hover:underline"
@@ -118,12 +137,14 @@ export default async function PostsPage({
               >
                 + Nouveau post
               </Link>
-              <Link
-                className="text-sm text-muted-foreground hover:text-primary"
-                href={`/clients?tenantId=${tenantId}`}
-              >
-                Gerer client
-              </Link>
+              {(isAdmin || isManager) && (
+                <Link
+                  className="text-sm text-muted-foreground hover:text-primary"
+                  href={`/clients?tenantId=${tenantId}`}
+                >
+                  Gerer client
+                </Link>
+              )}
             </>
           )}
         </div>

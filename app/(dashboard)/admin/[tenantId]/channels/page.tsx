@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { isAgencyAdmin, isAgencyManager, isAgencyProduction, isClientRole } from '@/lib/roles';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,13 +23,24 @@ const SOCIAL_NETWORKS = [
 export default async function TenantChannelsPage({ params }: { params: { tenantId: string } }) {
   const session = await requireSession();
 
-  // Verify user is agency_admin
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { role: true }
   });
 
-  if (user?.role !== 'agency_admin') {
+  if (!user || isAgencyProduction(user.role) || isClientRole(user.role)) {
+    redirect('/select-tenant');
+  }
+
+  const isAdmin = isAgencyAdmin(user.role);
+  const isManager = isAgencyManager(user.role);
+  const membership = isManager
+    ? await prisma.tenantMembership.findUnique({
+        where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
+      })
+    : null;
+
+  if (!isAdmin && !membership) {
     redirect('/select-tenant');
   }
 

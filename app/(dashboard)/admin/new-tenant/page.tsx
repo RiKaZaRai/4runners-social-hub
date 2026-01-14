@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { canCreateClients } from '@/lib/roles';
 
 const ERROR_MESSAGES: Record<string, string> = {
   name_required: 'Veuillez renseigner un nom de client.',
@@ -23,13 +24,13 @@ export default async function NewTenantPage({
 }) {
   const session = await requireSession();
 
-  // Verify user is agency_admin
+  // Verify user can create a client (admin or manager if allowed)
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { role: true }
   });
 
-  if (user?.role !== 'agency_admin') {
+  if (!canCreateClients(user?.role)) {
     redirect('/select-tenant');
   }
 
@@ -42,7 +43,7 @@ export default async function NewTenantPage({
       select: { role: true }
     });
 
-    if (user?.role !== 'agency_admin') {
+    if (!canCreateClients(user?.role)) {
       redirect('/select-tenant?error=unauthorized');
     }
 
@@ -62,7 +63,7 @@ export default async function NewTenantPage({
           data: {
             tenantId: created.id,
             userId: session.userId,
-            role: 'client_admin'
+            role: 'viewer'
           }
         });
 

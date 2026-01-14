@@ -2,33 +2,56 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import {
+  isAgencyAdmin,
+  isAgencyManager,
+  isAgencyProduction,
+  isClientRole
+} from '@/lib/roles';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default async function TenantMembersPage({ params }: { params: { tenantId: string } }) {
   const session = await requireSession();
 
-  // Verify user is agency_admin
-  const user = await prisma.user.findUnique({
+  const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { role: true }
   });
 
-  if (user?.role !== 'agency_admin') {
+  if (!currentUser || isAgencyProduction(currentUser.role) || isClientRole(currentUser.role)) {
     redirect('/select-tenant');
   }
 
-  // Get tenant with members
+  const isAdmin = isAgencyAdmin(currentUser.role);
+  const isManager = isAgencyManager(currentUser.role);
+  const managerMembership = isManager
+    ? await prisma.tenantMembership.findUnique({
+        where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
+      })
+    : null;
+
+  if (!isAdmin && !managerMembership) {
+    redirect('/select-tenant');
+  }
+
   const tenant = await prisma.tenant.findUnique({
     where: { id: params.tenantId },
     include: {
       memberships: {
         include: {
           user: {
-            select: { id: true, name: true, email: true, role: true, firstName: true, lastName: true }
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              firstName: true,
+              lastName: true,
+              phone: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -40,19 +63,47 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     notFound();
   }
 
-  // Get all users to add them as members
   const allUsers = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, firstName: true, lastName: true },
+    where: { role: { in: ['client_admin', 'client_user'] } },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      firstName: true,
+      lastName: true,
+      phone: true
+    },
     orderBy: { email: 'asc' }
   });
 
-  // Filter out users who are already members
   const availableUsers = allUsers.filter(
     (u) => !tenant.memberships.some((m) => m.userId === u.id)
   );
 
   async function addMember(formData: FormData) {
     'use server';
+
+    const session = await requireSession();
+    const actor = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (!actor || isAgencyProduction(actor.role) || isClientRole(actor.role)) {
+      redirect('/select-tenant');
+    }
+
+    const actorIsAdmin = isAgencyAdmin(actor.role);
+    const actorIsManager = isAgencyManager(actor.role);
+
+    if (!actorIsAdmin) {
+      if (!actorIsManager) redirect('/select-tenant');
+      const membership = await prisma.tenantMembership.findUnique({
+        where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
+      });
+      if (!membership) redirect('/select-tenant');
+    }
 
     const userId = formData.get('userId') as string;
     const role = formData.get('role') as 'viewer' | 'client_admin';
@@ -80,6 +131,16 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
   async function removeMember(formData: FormData) {
     'use server';
 
+    const session = await requireSession();
+    const actor = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (!actor || !isAgencyAdmin(actor.role)) {
+      redirect('/select-tenant');
+    }
+
     const membershipId = formData.get('membershipId') as string;
 
     if (!membershipId) {
@@ -87,6 +148,19 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     }
 
     try {
+      const membership = await prisma.tenantMembership.findUnique({
+        where: { id: membershipId },
+        select: { userId: true, tenantId: true }
+      });
+
+      if (!membership || membership.tenantId !== params.tenantId) {
+        redirect(`/admin/${params.tenantId}/members?error=not_found`);
+      }
+
+      if (membership.userId === session.userId) {
+        redirect(`/admin/${params.tenantId}/members?error=cannot_remove_self`);
+      }
+
       await prisma.tenantMembership.delete({
         where: { id: membershipId }
       });
@@ -101,6 +175,27 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
   async function updateMemberRole(formData: FormData) {
     'use server';
 
+    const session = await requireSession();
+    const actor = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true }
+    });
+
+    if (!actor || isAgencyProduction(actor.role) || isClientRole(actor.role)) {
+      redirect('/select-tenant');
+    }
+
+    const actorIsAdmin = isAgencyAdmin(actor.role);
+    const actorIsManager = isAgencyManager(actor.role);
+
+    if (!actorIsAdmin) {
+      if (!actorIsManager) redirect('/select-tenant');
+      const membership = await prisma.tenantMembership.findUnique({
+        where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
+      });
+      if (!membership) redirect('/select-tenant');
+    }
+
     const membershipId = formData.get('membershipId') as string;
     const role = formData.get('role') as 'viewer' | 'client_admin';
 
@@ -109,6 +204,15 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     }
 
     try {
+      const membership = await prisma.tenantMembership.findUnique({
+        where: { id: membershipId },
+        select: { tenantId: true }
+      });
+
+      if (!membership || membership.tenantId !== params.tenantId) {
+        redirect(`/admin/${params.tenantId}/members?error=not_found`);
+      }
+
       await prisma.tenantMembership.update({
         where: { id: membershipId },
         data: { role }
@@ -132,12 +236,9 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
             ← Retour au client
           </Link>
           <h1 className="text-3xl font-semibold">Gérer les membres</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Membres de {tenant.name}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Membres de {tenant.name}</p>
         </div>
 
-        {/* Add Member */}
         {availableUsers.length > 0 && (
           <Card>
             <CardHeader>
@@ -159,7 +260,10 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
                     <option value="">Sélectionnez un utilisateur</option>
                     {availableUsers.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {[user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || user.email} ({user.email})
+                        {[user.firstName, user.lastName].filter(Boolean).join(' ') ||
+                          user.name ||
+                          user.email}{' '}
+                        ({user.email})
                       </option>
                     ))}
                   </select>
@@ -173,8 +277,8 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     required
                   >
-                    <option value="viewer">Viewer (lecture seule)</option>
-                    <option value="client_admin">Client Admin (peut valider les posts)</option>
+                    <option value="viewer">Client user (lecture)</option>
+                    <option value="client_admin">Client admin</option>
                   </select>
                 </div>
 
@@ -186,13 +290,10 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
           </Card>
         )}
 
-        {/* Members List */}
         <Card>
           <CardHeader>
             <CardTitle>Membres actuels</CardTitle>
-            <CardDescription>
-              {tenant.memberships.length} membre(s)
-            </CardDescription>
+            <CardDescription>{tenant.memberships.length} membre(s)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -207,16 +308,21 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">
-                          {[membership.user.firstName, membership.user.lastName].filter(Boolean).join(' ') ||
+                          {[membership.user.firstName, membership.user.lastName]
+                            .filter(Boolean)
+                            .join(' ') ||
                             membership.user.name ||
                             membership.user.email}
                         </p>
                         <Badge variant="outline">{membership.user.role}</Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">{membership.user.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {membership.user.email}
+                        {membership.user.phone ? ` · ${membership.user.phone}` : ''}
+                      </p>
                       <div className="mt-2">
                         <Badge variant={membership.role === 'client_admin' ? 'accent' : 'default'}>
-                          {membership.role === 'viewer' ? 'Viewer' : 'Client Admin'}
+                          {membership.role === 'client_admin' ? 'Client admin' : 'Client user'}
                         </Badge>
                       </div>
                     </div>
@@ -230,7 +336,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
                           value={membership.role === 'viewer' ? 'client_admin' : 'viewer'}
                         />
                         <Button type="submit" variant="outline" size="sm">
-                          {membership.role === 'viewer' ? '→ Admin' : '→ Viewer'}
+                          {membership.role === 'viewer' ? '→ Client admin' : '→ Client user'}
                         </Button>
                       </form>
 

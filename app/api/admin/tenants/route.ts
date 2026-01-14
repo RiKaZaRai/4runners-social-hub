@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireSession } from '@/lib/auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { prisma } from '@/lib/db';
+import { canCreateClients } from '@/lib/roles';
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
       select: { role: true }
     });
 
-    if (user?.role !== 'agency_admin') {
+    if (!canCreateClients(user?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
         data: {
           tenantId: created.id,
           userId: session.userId,
-          role: 'client_admin'
+          role: 'viewer'
         }
       });
       return created;

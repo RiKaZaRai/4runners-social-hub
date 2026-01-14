@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@/lib/auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { prisma } from '@/lib/db';
+import { isAgencyAdmin, isAgencyManager, isAgencyProduction, isClientRole } from '@/lib/roles';
 
 export async function PATCH(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; channelId: string }> }
 ) {
   try {
@@ -15,13 +16,24 @@ export async function PATCH(
     // CSRF protection
     await requireCsrfToken(req);
 
-    // Verify user is agency_admin
+    // Verify user access
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
       select: { role: true }
     });
 
-    if (user?.role !== 'agency_admin') {
+    if (!user || isAgencyProduction(user.role) || isClientRole(user.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    if (isAgencyManager(user.role)) {
+      const membership = await prisma.tenantMembership.findUnique({
+        where: { tenantId_userId: { tenantId: id, userId: session.userId } }
+      });
+      if (!membership) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+    } else if (!isAgencyAdmin(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -61,7 +73,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; channelId: string }> }
 ) {
   try {
@@ -72,13 +84,24 @@ export async function DELETE(
     // CSRF protection
     await requireCsrfToken(req);
 
-    // Verify user is agency_admin
+    // Verify user access
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
       select: { role: true }
     });
 
-    if (user?.role !== 'agency_admin') {
+    if (!user || isAgencyProduction(user.role) || isClientRole(user.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    if (isAgencyManager(user.role)) {
+      const membership = await prisma.tenantMembership.findUnique({
+        where: { tenantId_userId: { tenantId: id, userId: session.userId } }
+      });
+      if (!membership) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+    } else if (!isAgencyAdmin(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

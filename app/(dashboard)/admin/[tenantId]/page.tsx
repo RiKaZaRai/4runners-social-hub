@@ -5,17 +5,24 @@ import { prisma } from '@/lib/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { isAgencyAdmin, isAgencyManager } from '@/lib/roles';
 
 export default async function AdminTenantPage({ params }: { params: { tenantId: string } }) {
   const session = await requireSession();
 
-  // Verify user is agency_admin
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { role: true }
   });
 
-  if (user?.role !== 'agency_admin') {
+  const membership = await prisma.tenantMembership.findFirst({
+    where: { tenantId: params.tenantId, userId: session.userId }
+  });
+
+  const isAdmin = isAgencyAdmin(user?.role);
+  const isManager = isAgencyManager(user?.role) && !!membership;
+
+  if (!isAdmin && !isManager) {
     redirect('/select-tenant');
   }
 

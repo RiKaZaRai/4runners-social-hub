@@ -52,7 +52,7 @@ async function main() {
     create: {
       email: 'client@acme.local',
       name: 'Client Acme',
-      role: 'client',
+      role: 'client_user',
       accessToken: clientToken
     }
   });

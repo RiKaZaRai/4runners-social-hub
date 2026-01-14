@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/db';
 import { SESSION_COOKIE } from '@/lib/auth';
+import type { Role } from '@prisma/client';
+import { isAgencyAdmin, isClientRole } from '@/lib/roles';
 
 export interface AuthenticatedRequest {
   userId: string;
-  role: 'agency_admin' | 'agency_user' | 'client';
+  role: Role;
   tenantIds: string[];
   session: {
     id: string;
@@ -69,13 +71,17 @@ export function requireTenantAccess(auth: AuthenticatedRequest, tenantId: string
     throw new Error('TENANT_REQUIRED');
   }
 
+  if (isAgencyAdmin(auth.role)) {
+    return;
+  }
+
   if (!auth.tenantIds.includes(tenantId)) {
     throw new Error('FORBIDDEN');
   }
 }
 
 export function requireAgency(auth: AuthenticatedRequest): void {
-  if (auth.role === 'client') {
+  if (isClientRole(auth.role)) {
     throw new Error('FORBIDDEN');
   }
 }

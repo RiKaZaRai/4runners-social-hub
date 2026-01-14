@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@/lib/auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { prisma } from '@/lib/db';
+import { isAgencyAdmin } from '@/lib/roles';
 
 export async function PATCH(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -21,7 +22,7 @@ export async function PATCH(
       select: { role: true }
     });
 
-    if (user?.role !== 'agency_admin') {
+    if (!isAgencyAdmin(user?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -47,7 +48,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -64,7 +65,7 @@ export async function DELETE(
       select: { role: true }
     });
 
-    if (user?.role !== 'agency_admin') {
+    if (!isAgencyAdmin(user?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

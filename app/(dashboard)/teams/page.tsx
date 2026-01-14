@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { isAgencyAdmin, isAgencyRole } from '@/lib/roles';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,12 +25,17 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
     select: { role: true }
   });
 
-  if (user?.role !== 'agency_admin') {
+  if (!isAgencyAdmin(user?.role)) {
     redirect('/home');
   }
 
   const [users, tenants] = await Promise.all([
     prisma.user.findMany({
+      where: {
+        role: {
+          in: ['agency_admin', 'agency_manager', 'agency_production']
+        }
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -58,7 +64,11 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
     const phone = (formData.get('phone') as string | null)?.trim() || null;
     const email = (formData.get('email') as string | null)?.trim().toLowerCase();
     const password = formData.get('password') as string | null;
-    const role = formData.get('role') as 'agency_admin' | 'agency_user' | null;
+    const role = formData.get('role') as
+      | 'agency_admin'
+      | 'agency_manager'
+      | 'agency_production'
+      | null;
     const tenantIds = formData.getAll('tenantIds') as string[];
 
     if (!firstName || !lastName || !email || !password || !role) {
@@ -109,7 +119,7 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
       select: { role: true }
     });
 
-    if (!currentUser || currentUser.role !== 'agency_admin') {
+    if (!currentUser || !isAgencyAdmin(currentUser.role)) {
       redirect('/home');
     }
 
@@ -206,7 +216,8 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
                 required
               >
                 <option value="agency_admin">Admin 4runners</option>
-                <option value="agency_user">Gestionnaire 4runners</option>
+                <option value="agency_manager">Gestionnaire 4runners</option>
+                <option value="agency_production">Production 4runners</option>
               </select>
             </div>
             <div className="space-y-2 md:col-span-2">

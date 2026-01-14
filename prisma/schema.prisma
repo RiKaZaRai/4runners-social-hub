@@ -9,8 +9,10 @@ datasource db {
 
 enum Role {
   agency_admin
-  agency_user
-  client
+  agency_manager
+  agency_production
+  client_admin
+  client_user
 }
 
 enum TenantRole {
@@ -79,7 +81,7 @@ model User {
   lastName      String?
   phone         String?
   name          String?
-  role          Role               @default(agency_user)
+  role          Role               @default(agency_manager)
   passwordHash  String?
   accessToken   String?             @unique
   createdAt     DateTime            @default(now())

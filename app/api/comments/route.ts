@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { commentSchema } from '@/lib/validators';
 import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
+import { isClientRole } from '@/lib/roles';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
     const data = {
       postId: form.get('postId')?.toString(),
       body: form.get('body')?.toString(),
-      authorRole: auth.role === 'client' ? 'client' : 'agency'
+      authorRole: isClientRole(auth.role) ? 'client' : 'agency'
     };
     const tenantId = form.get('tenantId')?.toString();
 

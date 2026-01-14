@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CsrfInput } from '@/components/csrf-input';
+import { isAgencyAdmin, isAgencyRole } from '@/lib/roles';
 
 export default async function NewPostPage({
   searchParams
@@ -20,8 +21,15 @@ export default async function NewPostPage({
     where: { id: session.userId },
     select: { role: true }
   });
-  if (!currentUser || currentUser.role === 'client') {
+  if (!currentUser || !isAgencyRole(currentUser.role)) {
     redirect(`/posts?tenantId=${tenantId}`);
+  }
+
+  if (!isAgencyAdmin(currentUser.role)) {
+    const membership = await prisma.tenantMembership.findUnique({
+      where: { tenantId_userId: { tenantId, userId: session.userId } }
+    });
+    if (!membership) redirect('/select-tenant');
   }
 
   const channels = await prisma.tenantChannel.findMany({

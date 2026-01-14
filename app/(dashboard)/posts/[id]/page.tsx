@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { CsrfInput } from '@/components/csrf-input';
+import { isAgencyAdmin, isClientRole } from '@/lib/roles';
 
 export default async function PostDetailPage({
   params,
@@ -23,7 +24,20 @@ export default async function PostDetailPage({
     where: { id: session.userId },
     select: { role: true }
   });
-  const isClient = currentUser?.role === 'client';
+  if (!currentUser) redirect('/login');
+  const isClient = isClientRole(currentUser.role);
+
+  if (!isAgencyAdmin(currentUser.role)) {
+    const membership = await prisma.tenantMembership.findUnique({
+      where: { tenantId_userId: { tenantId, userId: session.userId } }
+    });
+    if (!membership && !isClientRole(currentUser.role)) {
+      redirect('/select-tenant');
+    }
+    if (isClientRole(currentUser.role) && !membership) {
+      redirect('/select-tenant');
+    }
+  }
 
   const post = await prisma.post.findFirst({
     where: { id: params.id, tenantId },

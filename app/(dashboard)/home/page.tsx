@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { isAgencyAdmin, isAgencyRole } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +13,12 @@ export default async function HomePage() {
     select: { role: true, name: true, email: true, firstName: true, lastName: true }
   });
 
-  const isAgency = user?.role === 'agency_admin';
-
   if (!user) {
     redirect('/login');
   }
+
+  const isAgency = isAgencyRole(user.role);
+  const isAdmin = isAgencyAdmin(user.role);
 
   const tenantIds = await prisma.tenantMembership.findMany({
     where: { userId: session.userId },
@@ -25,13 +27,13 @@ export default async function HomePage() {
   const tenantIdList = tenantIds.map((item) => item.tenantId);
 
   const [tenantCount, postCount, userCount] = await Promise.all([
-    isAgency
+    isAdmin
       ? prisma.tenant.count()
       : prisma.tenant.count({ where: { id: { in: tenantIdList } } }),
-    isAgency
+    isAdmin
       ? prisma.post.count()
       : prisma.post.count({ where: { tenantId: { in: tenantIdList } } }),
-    isAgency
+    isAdmin
       ? prisma.user.count()
       : prisma.tenantMembership.count({ where: { tenantId: { in: tenantIdList } } })
   ]);

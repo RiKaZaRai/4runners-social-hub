@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { prisma } from '@/lib/db';
 import { minioBucket, s3Client } from '@/lib/minio';
@@ -6,7 +6,10 @@ import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth
 import { requireRateLimit } from '@/lib/rate-limit';
 import { sanitizeFilename } from '@/lib/file-validation';
 
-export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const params = await context.params;
 

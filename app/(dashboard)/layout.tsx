@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CsrfInput } from '@/components/csrf-input';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { canCreateClients, isAgencyAdmin, isAgencyRole, isClientRole } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +16,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     where: { id: session.userId },
     select: { role: true, name: true, email: true, firstName: true, lastName: true }
   });
-  const isClient = currentUser?.role === 'client';
-  const isAgency = currentUser?.role === 'agency_admin';
+  const isClient = isClientRole(currentUser?.role);
+  const isAgency = isAgencyRole(currentUser?.role);
+  const isAdmin = isAgencyAdmin(currentUser?.role);
   const memberships = await prisma.tenantMembership.findMany({
     where: { userId: session.userId },
     include: { tenant: true }
   });
-  const tenants = isAgency
+  const tenants = isAdmin
     ? await prisma.tenant.findMany({ orderBy: { name: 'asc' } })
     : memberships.map((membership) => membership.tenant);
 
@@ -52,16 +54,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <Building2 className="h-4 w-4" />
                 Espaces
               </Link>
-              {isAgency && (
+              {isAdmin && (
                 <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/teams">
                   <Users className="h-4 w-4" />
                   Equipes
                 </Link>
               )}
-              <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/jobs">
-                <AlertTriangle className="h-4 w-4" />
-                Jobs / erreurs
-              </Link>
+              {isAgency && (
+                <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/jobs">
+                  <AlertTriangle className="h-4 w-4" />
+                  Jobs / erreurs
+                </Link>
+              )}
             </div>
 
             <div className="rounded-xl border border-border bg-card px-3 py-3">
@@ -69,7 +73,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   Comptes
                 </p>
-                {isAgency && (
+                {canCreateClients(currentUser?.role) && (
                   <Button variant="outline" size="sm" asChild>
                     <Link href="/admin/new-tenant">Nouveau</Link>
                   </Button>
