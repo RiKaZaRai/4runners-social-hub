@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { AlertTriangle, Building2, Home, Inbox, Users } from 'lucide-react';
+import { Building2, Home, Inbox, Settings } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CsrfInput } from '@/components/csrf-input';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { canCreateClients, isAgencyAdmin, isAgencyRole, isClientRole } from '@/lib/roles';
+import { canCreateClients, isAgencyAdmin, isClientRole } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     select: { role: true, name: true, email: true, firstName: true, lastName: true }
   });
   const isClient = isClientRole(currentUser?.role);
-  const isAgency = isAgencyRole(currentUser?.role);
   const isAdmin = isAgencyAdmin(currentUser?.role);
   const memberships = await prisma.tenantMembership.findMany({
     where: { userId: session.userId },
@@ -43,6 +42,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
 
           <nav className="flex-1 space-y-6 px-4 py-5 text-sm">
+            {/* Menu principal - usage quotidien uniquement */}
             <div className="space-y-1">
               <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/home">
                 <Home className="h-4 w-4" />
@@ -59,20 +59,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <Building2 className="h-4 w-4" />
                 Espaces
               </Link>
-              {isAdmin && (
-                <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/teams">
-                  <Users className="h-4 w-4" />
-                  Equipes
-                </Link>
-              )}
-              {isAgency && (
-                <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/jobs">
-                  <AlertTriangle className="h-4 w-4" />
-                  Jobs / erreurs
-                </Link>
-              )}
             </div>
 
+            {/* Section Espaces */}
             <div className="rounded-xl border border-border bg-card px-3 py-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -112,6 +101,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
               )}
             </div>
 
+            {/* Parametres - admin only */}
+            {isAdmin && (
+              <div className="space-y-1">
+                <p className="px-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Administration
+                </p>
+                <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/settings">
+                  <Settings className="h-4 w-4" />
+                  Parametres
+                </Link>
+              </div>
+            )}
           </nav>
         </aside>
 
