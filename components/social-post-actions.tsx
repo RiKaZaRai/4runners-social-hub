@@ -90,13 +90,6 @@ export default function SocialPostActions({ spaceId, postId, status, isAgency, i
     }
   };
 
-  const dataMessage = (endpoint: string) => {
-    if (endpoint === 'send-for-approval') return 'Post envoyé en validation';
-    if (endpoint === 'approve') return 'Post approuvé';
-    if (endpoint === 'request-changes') return 'Commentaire envoyé';
-    return 'Action réussie';
-  };
-
   const handleRequestChanges = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!comment.trim()) {
