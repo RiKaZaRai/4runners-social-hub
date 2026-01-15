@@ -50,7 +50,7 @@ export default function SocialPostActions({ spaceId, postId, status, isAgency, i
     setToastKey((prev) => prev + 1);
   };
 
-  const dataMessage = (endpoint: string) => {
+  const getActionMessage = (endpoint: string) => {
     if (endpoint === 'send-for-approval') return 'Post envoyé en validation';
     if (endpoint === 'approve') return 'Post approuvé';
     if (endpoint === 'request-changes') return 'Commentaire envoyé';
@@ -80,7 +80,7 @@ export default function SocialPostActions({ spaceId, postId, status, isAgency, i
         const data = await response.json().catch(() => ({ error: 'Erreur' }));
         throw new Error(data.error ?? 'Action impossible');
       }
-      showToast(dataMessage(endpoint));
+      showToast(getActionMessage(endpoint));
       router.refresh();
     } catch (error) {
       console.error(error);

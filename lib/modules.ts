@@ -10,7 +10,7 @@ export const AVAILABLE_SPACE_MODULES = [
 ] as const;
 export type SpaceModuleName = (typeof AVAILABLE_SPACE_MODULES)[number];
 
-const normalizeModules = (value: Prisma.JsonValue | null | undefined): string[] => {
+export const normalizeModules = (value: Prisma.JsonValue | null | undefined): string[] => {
   if (!value) return [];
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string');

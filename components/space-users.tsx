@@ -456,6 +456,14 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
                           Renvoyer
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => revokeInviteMutation.mutate(invite.id)}
+                        disabled={revokeInviteMutation.isPending}
+                      >
+                        Révoquer
+                      </Button>
                     </div>
                   </div>
                 );

@@ -68,16 +68,7 @@ export default async function SpaceSettingsPage({
 
       <SpaceSettingsPanel
         spaceId={params.id}
-        modules={modulesList.reduce<Record<string, boolean>>((acc, moduleName) => {
-          acc[moduleName] = true;
-          return acc;
-        }, {
-          messages: false,
-          social: false,
-          docs: false,
-          projects: false,
-          planning: false
-        } as Record<string, boolean>) as Record<any, boolean>}
+        modules={moduleState}
         socialSettings={socialSettings}
         canManageModules={isAdmin || isManager}
       />

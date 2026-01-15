@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { CsrfInput } from '@/components/csrf-input';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { canCreateClients, isAgencyAdmin, isClientRole } from '@/lib/roles';
+import { normalizeModules } from '@/lib/modules';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,27 +77,31 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   </Button>
                 )}
               </div>
-              <ul className="mt-3 space-y-2 text-sm">
-                {spacesPreview.map((space) => (
-                  <li key={space.id}>
-                    <Link
-                      className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted"
-                      href={`/spaces/${space.id}/overview`}
-                    >
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="flex-1 truncate">{space.name}</span>
-                    </Link>
-                {Array.isArray(space.modules) && space.modules.includes('social') && (
-                      <Link
-                        className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                        href={`/spaces/${space.id}/social`}
-                      >
-                        <Link2 className="h-3.5 w-3.5" />
-                        Réseaux
-                      </Link>
-                    )}
-                  </li>
-                ))}
+                <ul className="mt-3 space-y-2 text-sm">
+                  {spacesPreview.map((space) => {
+                    const modules = normalizeModules(space.modules);
+                    const hasSocial = modules.includes('social');
+                    return (
+                      <li key={space.id}>
+                        <Link
+                          className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted"
+                          href={`/spaces/${space.id}/overview`}
+                        >
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="flex-1 truncate">{space.name}</span>
+                        </Link>
+                        {hasSocial && (
+                          <Link
+                            className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                            href={`/spaces/${space.id}/social`}
+                          >
+                            <Link2 className="h-3.5 w-3.5" />
+                            Réseaux
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
                 {spacesPreview.length === 0 && (
                   <li className="rounded-md border border-dashed border-border px-2 py-2 text-xs text-muted-foreground">
                     Aucun espace.

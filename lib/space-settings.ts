@@ -19,11 +19,13 @@ export async function getSocialSettings(spaceId: string) {
     select: { socialSettings: true }
   });
 
+  const settings = (tenant?.socialSettings ?? {}) as SocialSettingsPayload;
+
   return {
-    instagram_handle: tenant?.socialSettings?.instagram_handle ?? null,
-    facebook_page: tenant?.socialSettings?.facebook_page ?? null,
-    linkedin_page: tenant?.socialSettings?.linkedin_page ?? null,
-    note: tenant?.socialSettings?.note ?? null
+    instagram_handle: settings.instagram_handle ?? null,
+    facebook_page: settings.facebook_page ?? null,
+    linkedin_page: settings.linkedin_page ?? null,
+    note: settings.note ?? null
   };
 }
 
@@ -36,7 +38,7 @@ export async function updateSocialSettings(
     select: { socialSettings: true }
   });
 
-  const current = tenant?.socialSettings ?? {};
+  const current = (tenant?.socialSettings ?? {}) as SocialSettingsPayload;
 
   const next = {
     ...current,

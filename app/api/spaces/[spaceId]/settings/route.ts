@@ -3,13 +3,19 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
 import { isAgencyAdmin, isAgencyManager } from '@/lib/roles';
-import { AVAILABLE_SPACE_MODULES, setModule, getSpaceModules } from '@/lib/modules';
+import {
+  AVAILABLE_SPACE_MODULES,
+  SpaceModuleName,
+  setModule,
+  getSpaceModules
+} from '@/lib/modules';
 import { getSocialSettings, updateSocialSettings, normalizeHandle } from '@/lib/space-settings';
 
-const moduleSchema = z.record(
-  z.enum(AVAILABLE_SPACE_MODULES),
-  z.boolean()
+const moduleEnum = z.enum(
+  [...AVAILABLE_SPACE_MODULES] as [SpaceModuleName, ...SpaceModuleName[]]
 );
+
+const moduleSchema = z.record(moduleEnum, z.boolean());
 
 const socialSchema = z.object({
   instagram_handle: z.string().optional().nullable(),
@@ -89,9 +95,10 @@ export async function PATCH(
     if (!parsed.success) {
       throw new Error('INVALID_INPUT');
     }
+    const { spaceId } = await context.params;
     const result = await processSpaceSettingsPayload({
       auth,
-      spaceId: params.spaceId,
+      spaceId,
       payload: parsed.data
     });
     return NextResponse.json(result);
