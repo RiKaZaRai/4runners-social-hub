@@ -38,6 +38,18 @@ export async function POST(
       return NextResponse.json({ error: validationError.error }, { status: validationError.status });
     }
 
+    if (!invite) {
+      // Typescript still sees invite as possibly null; double-check for safety.
+      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
+    }
+
+<<<<<<< HEAD
+=======
+    if (!invite) {
+      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
+    }
+
+>>>>>>> c3b607c (Improve invite acceptance flow)
     const normalizedInviteEmail = normalizeEmail(invite.email);
     const user = await prisma.user.findUnique({
       where: { id: auth.userId }
