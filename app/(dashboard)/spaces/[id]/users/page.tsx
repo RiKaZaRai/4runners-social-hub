@@ -85,7 +85,7 @@ export default async function SpaceUsersPage({
         </p>
       </div>
 
-      <SpaceUsers spaceId={id} canManage={canManage} />
+      <SpaceUsers spaceId={tenantId} canManage={canManage} />
     </div>
   );
 }
