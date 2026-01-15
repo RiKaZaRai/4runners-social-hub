@@ -156,6 +156,9 @@ export default async function SpaceOverviewPage({
         <Button variant="outline" asChild>
           <Link href={`/ideas?tenantId=${tenant.id}`}>Voir les idees</Link>
         </Button>
+        <Button variant="outline" asChild>
+          <Link href={`/spaces/${tenant.id}/messages`}>Messages</Link>
+        </Button>
         {isAdmin && (
           <Button variant="outline" asChild>
             <Link href={`/admin/${tenant.id}`}>Parametres</Link>

@@ -240,6 +240,20 @@ model Comment {
   post Post @relation(fields: [postId], references: [id])
 }
 
+model SpaceMessage {
+  id           String      @id @default(uuid())
+  spaceId      String
+  authorUserId String
+  authorRole   CommentRole
+  body         String
+  createdAt    DateTime    @default(now())
+
+  space  Tenant @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId, createdAt])
+}
+
 model Idea {
   id              String     @id @default(uuid())
   tenantId        String

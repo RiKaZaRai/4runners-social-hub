@@ -43,6 +43,10 @@ export const commentSchema = z.object({
   authorRole: z.enum(['agency', 'client'])
 });
 
+export const spaceMessageSchema = z.object({
+  body: z.string().min(1).max(2000)
+});
+
 export const ideaSchema = z.object({
   tenantId: z.string().uuid(),
   title: z.string().min(2),
