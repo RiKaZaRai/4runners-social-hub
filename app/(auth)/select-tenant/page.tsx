@@ -14,11 +14,9 @@ export default async function SelectTenantPage() {
     select: { role: true }
   });
 
-  if (isAgencyAdmin(user?.role)) {
-    redirect('/admin');
-  }
-  if (isAgencyRole(user?.role)) {
-    redirect('/spaces');
+  // Tous les utilisateurs agence vont vers /home
+  if (isAgencyAdmin(user?.role) || isAgencyRole(user?.role)) {
+    redirect('/home');
   }
 
   const memberships = await prisma.tenantMembership.findMany({

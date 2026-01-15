@@ -69,10 +69,10 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
         {/* Header */}
         <div>
           <Link
-            href="/admin"
+            href="/spaces"
             className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
-            ← Retour au dashboard
+            ← Retour aux espaces
           </Link>
           <div className="flex items-center justify-between">
             <div>

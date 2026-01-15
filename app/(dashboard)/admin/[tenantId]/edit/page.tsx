@@ -59,7 +59,7 @@ export default async function EditTenantPage({ params }: { params: { tenantId: s
         where: { id: params.tenantId }
       });
 
-      redirect('/admin');
+      redirect('/spaces');
     } catch (error) {
       console.error('Error deleting tenant:', error);
       redirect(`/admin/${params.tenantId}/edit?error=delete_failed`);

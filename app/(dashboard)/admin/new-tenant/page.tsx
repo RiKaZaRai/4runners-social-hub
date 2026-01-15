@@ -91,10 +91,10 @@ export default async function NewTenantPage({
     <div className="space-y-6">
       <div>
         <Link
-          href="/admin"
+          href="/spaces"
           className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Retour au dashboard
+          ← Retour aux espaces
         </Link>
         <h1 className="text-3xl font-semibold">Nouveau Client</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -137,7 +137,7 @@ export default async function NewTenantPage({
                 Créer le client
               </Button>
               <Button type="button" variant="outline" asChild>
-                <Link href="/admin">Annuler</Link>
+                <Link href="/spaces">Annuler</Link>
               </Button>
             </div>
           </form>
