@@ -87,3 +87,23 @@ MINIO_REGION=us-east-1
   - 400 si l’email est invalide.
   - 500 / `MAIL_NOT_CONFIGURED` si la configuration manque.
   - Retour JSON `{ ok: true }` sur succès.
+
+## Modules & Réseaux (espace client)
+
+- Accessible via `/spaces/[spaceId]/settings` (agency_admin/agency_manager uniquement).
+- **Modules** : messages / social / docs / projects / planning.
+  - Chaque module peut être activé/désactivé individuellement (mise à jour immédiate).
+  - Les routes et menus sont verrouillés côté serveur quand `hasModule(spaceId, module)` retourne `false`.
+- **Réseaux (statut)** :
+  - Enregistrez les handles Instagram, Facebook et LinkedIn ainsi qu’une note interne.
+  - L’état “configured” est dérivé (true si un handle/page est renseigné).
+  - Les robots de validation (posts/comments) peuvent se baser sur la présence de ces handles pour autoriser certaines actions.
+- **API** : `GET|PATCH /api/spaces/[spaceId]/settings` gère modules + réseaux. Les patchs sont validés par Zod et bloqués pour les rôles clients.
+
+## Workflow Réseaux (validation)
+
+- Le module `social` expose une page dédiée `/spaces/[spaceId]/social` (menu visible uniquement quand `hasModule(spaceId, 'social')` est vrai).
+- L’agence utilise l’écran “En validation” pour envoyer un post (statut `draft` ou `changes_requested`) vers le client, via `POST /api/spaces/[spaceId]/social/posts/[postId]/send-for-approval`.
+- Le client peut consulter le post, demander une modification (`POST .../request-changes` avec commentaire) ou l’approuver (`POST .../approve`), uniquement quand le statut est `pending_client`.
+- Chaque transition crée une notification dans l’Inbox (`type=validation` / `message` / `signal` selon le cas) avec un `entityKey` stable pour éviter les doublons.
+- La page détail `/spaces/[spaceId]/social/posts/[postId]` affiche le contenu, le fil de commentaires et les actions autorisées selon le rôle (agence ou client).
