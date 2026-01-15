@@ -11,11 +11,15 @@ import {
 } from '@/lib/roles';
 import { Badge } from '@/components/ui/badge';
 
-export default async function SpaceUsersPage({ params }: { params: { id: string } }) {
+export default async function SpaceUsersPage({
+  params
+}: {
+  params: { id?: string; spaceId?: string };
+}) {
   const session = await requireSession();
-  const { id } = params;
+  const tenantId = params.id ?? params.spaceId;
 
-  if (!id) {
+  if (!tenantId) {
     redirect('/spaces');
   }
 
@@ -36,7 +40,7 @@ export default async function SpaceUsersPage({ params }: { params: { id: string 
   }
 
   const tenant = await prisma.tenant.findUnique({
-    where: { id },
+    where: { id: tenantId },
     select: { id: true, name: true, active: true }
   });
 
@@ -49,7 +53,7 @@ export default async function SpaceUsersPage({ params }: { params: { id: string 
   }
 
   const membership = await prisma.tenantMembership.findUnique({
-    where: { tenantId_userId: { tenantId: id, userId: session.userId } }
+    where: { tenantId_userId: { tenantId, userId: session.userId } }
   });
 
   if (isClient && !membership) {
