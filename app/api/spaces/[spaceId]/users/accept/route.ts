@@ -4,9 +4,10 @@ import { requireAuth, handleApiError } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
 import { createInboxItem } from '@/lib/inbox';
-import { normalizeEmail, isInviteExpired } from '@/lib/space-users';
+import { normalizeEmail, validateInviteForAcceptance } from '@/lib/space-users';
 import { ensureTenantExists } from '@/lib/space-guards';
 import { prisma } from '@/lib/db';
+import { isClientRole } from '@/lib/roles';
 
 const acceptSchema = z.object({
   token: z.string().min(1)
@@ -32,18 +33,12 @@ export async function POST(
       where: { spaceId, token: parsed.data.token }
     });
 
-    if (!invite) {
-      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
+    const validationError = validateInviteForAcceptance(invite);
+    if (validationError) {
+      return NextResponse.json({ error: validationError.error }, { status: validationError.status });
     }
 
-    if (invite.acceptedAt) {
-      return NextResponse.json({ error: 'Invitation already accepted' }, { status: 409 });
-    }
-
-    if (isInviteExpired(invite)) {
-      return NextResponse.json({ error: 'Invitation expired' }, { status: 400 });
-    }
-
+    const normalizedInviteEmail = normalizeEmail(invite.email);
     const user = await prisma.user.findUnique({
       where: { id: auth.userId }
     });
@@ -52,7 +47,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    if (normalizeEmail(user.email) !== invite.email) {
+    if (normalizeEmail(user.email) !== normalizedInviteEmail) {
       return NextResponse.json({ error: 'Email mismatch' }, { status: 403 });
     }
 
@@ -88,11 +83,11 @@ export async function POST(
     await createInboxItem({
       spaceId,
       type: 'message',
-      actorType: 'client',
+      actorType: isClientRole(auth.role) ? 'client' : 'agency',
       title: 'Utilisateur a rejoint',
       description: `${user.email} a rejoint ${tenant.name}`,
       actionUrl: `/spaces/${spaceId}/users`,
-      entityKey: `space_invites:${spaceId}`,
+      entityKey: `invite:${spaceId}:${normalizedInviteEmail}`,
       status: 'open'
     });
 

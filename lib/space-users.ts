@@ -26,6 +26,24 @@ export function isInviteExpired(
   return expiresAt.getTime() <= now.getTime();
 }
 
+export function validateInviteForAcceptance(
+  invite: { expiresAt: InviteTimestamp; acceptedAt: InviteTimestamp } | null
+) {
+  if (!invite) {
+    return { status: 404, error: 'Invitation not found' };
+  }
+
+  if (invite.acceptedAt) {
+    return { status: 409, error: 'Invitation already accepted' };
+  }
+
+  if (isInviteExpired(invite)) {
+    return { status: 410, error: 'Invitation expired' };
+  }
+
+  return null;
+}
+
 export function canManageSpace(role: Role | null | undefined, hasMembership: boolean) {
   if (isAgencyAdmin(role)) {
     return true;
