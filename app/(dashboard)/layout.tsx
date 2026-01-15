@@ -86,7 +86,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                       <span className="flex-1 truncate">{space.name}</span>
                     </Link>
-                    {space.modules?.includes('social') && (
+                {Array.isArray(space.modules) && space.modules.includes('social') && (
                       <Link
                         className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                         href={`/spaces/${space.id}/social`}
