@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, handleApiError } from '@/lib/api-auth';
-import { requireRateLimit } from '@/lib/rate-limit';
 import { isAgencyAdmin } from '@/lib/roles';
 import { ensureEmailConfig, EmailProvider, SmtpEmailProvider, MailError } from '@/lib/email';
 
@@ -21,9 +20,7 @@ export async function processEmailTest({
     providerFactory?: (config: ReturnType<typeof ensureEmailConfig>) => EmailProvider;
   };
 }) {
-  const { rateLimit = (identifier: string) => requireRateLimit(identifier, 'emailTest'), providerFactory } = options ?? {};
-
-  await rateLimit(auth.userId);
+  const { providerFactory } = options ?? {};
 
   if (!isAgencyAdmin(auth.role)) {
     return NextResponse.json({ error: 'Access denied' }, { status: 403 });

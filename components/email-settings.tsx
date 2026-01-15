@@ -102,7 +102,7 @@ export function EmailSettingsPanel({ status }: { status: EmailStatus }) {
         <CardHeader>
           <CardTitle>Envoyer un email de test</CardTitle>
           <CardDescription>
-            Envoi limité à 3 tentatives toutes les 10 minutes. Configurez vos variables d&apos;environnement avant l&apos;envoi.
+            Envoyez autant de mails de test que nécessaire après avoir configuré vos variables SMTP.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -121,11 +121,6 @@ export function EmailSettingsPanel({ status }: { status: EmailStatus }) {
             <Button type="submit" disabled={isSending || !status.configured}>
               {isSending ? 'Envoi en cours…' : 'Envoyer un email de test'}
             </Button>
-            {!status.configured && (
-              <p className="text-xs text-muted-foreground">
-                La configuration SMTP est incomplète. Vérifiez les variables d&apos;environnement.
-              </p>
-            )}
           </form>
         </CardContent>
       </Card>
