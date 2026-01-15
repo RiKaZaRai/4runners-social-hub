@@ -80,42 +80,45 @@ enum InboxStatus {
 }
 
 model Tenant {
-  id          String             @id @default(uuid())
-  name        String             @unique
-  active      Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  memberships TenantMembership[]
-  posts       Post[]
-  ideas       Idea[]
-  assets      Asset[]
-  channels    TenantChannel[]
-  outboxJobs  OutboxJob[]
-  auditLogs   AuditLog[]
-  inboxItems  InboxItem[]
+  id            String             @id @default(uuid())
+  name          String             @unique
+  active        Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  memberships   TenantMembership[]
+  posts         Post[]
+  ideas         Idea[]
+  assets        Asset[]
+  channels      TenantChannel[]
+  outboxJobs    OutboxJob[]
+  auditLogs     AuditLog[]
+  inboxItems    InboxItem[]
   spaceMessages SpaceMessage[]
+  spaceInvites  SpaceInvite[]
 }
 
 model User {
-  id            String             @id @default(uuid())
-  email         String             @unique
-  firstName     String?
-  lastName      String?
-  phone         String?
-  name          String?
-  role          Role               @default(agency_manager)
-  passwordHash  String?
-  accessToken   String?             @unique
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  sessions      Session[]
-  memberships   TenantMembership[]
-  postsCreated  Post[]              @relation("posts_created")
-  postsUpdated  Post[]              @relation("posts_updated")
-  assets        Asset[]
-  auditLogs     AuditLog[]
-  magicLinks    MagicLinkToken[]
-  spaceMessages SpaceMessage[]
+  id                   String             @id @default(uuid())
+  email                String             @unique
+  firstName            String?
+  lastName             String?
+  phone                String?
+  name                 String?
+  role                 Role               @default(agency_manager)
+  passwordHash         String?
+  accessToken          String?            @unique
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  sessions             Session[]
+  memberships          TenantMembership[]
+  postsCreated         Post[]             @relation("posts_created")
+  postsUpdated         Post[]             @relation("posts_updated")
+  assets               Asset[]
+  auditLogs            AuditLog[]
+  magicLinks           MagicLinkToken[]
+  spaceMessages        SpaceMessage[]
+  spaceInvitesCreated  SpaceInvite[]      @relation("spaceInvitesCreated")
+  spaceInvitesAccepted SpaceInvite[]      @relation("spaceInvitesAccepted")
 }
 
 model TenantMembership {
@@ -154,28 +157,28 @@ model MagicLinkToken {
 }
 
 model Post {
-  id            String          @id @default(uuid())
-  tenantId      String
-  title         String
-  body          String
-  status        PostStatus      @default(draft)
-  network       SocialNetwork   @default(linkedin)
-  scheduledAt   DateTime?
-  publishedAt   DateTime?
-  archivedAt    DateTime?
-  createdById   String?
-  updatedById   String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id          String        @id @default(uuid())
+  tenantId    String
+  title       String
+  body        String
+  status      PostStatus    @default(draft)
+  network     SocialNetwork @default(linkedin)
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  archivedAt  DateTime?
+  createdById String?
+  updatedById String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  tenant      Tenant         @relation(fields: [tenantId], references: [id])
-  createdBy   User?          @relation("posts_created", fields: [createdById], references: [id])
-  updatedBy   User?          @relation("posts_updated", fields: [updatedById], references: [id])
-  versions    PostVersion[]
-  channels    PostChannel[]
-  checklist   ChecklistItem[]
-  comments    Comment[]
-  assets      Asset[]
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  createdBy User?           @relation("posts_created", fields: [createdById], references: [id])
+  updatedBy User?           @relation("posts_updated", fields: [updatedById], references: [id])
+  versions  PostVersion[]
+  channels  PostChannel[]
+  checklist ChecklistItem[]
+  comments  Comment[]
+  assets    Asset[]
 
   @@index([tenantId, status])
 }
@@ -186,8 +189,8 @@ model TenantChannel {
   network   SocialNetwork
   handle    String?
   url       String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
@@ -237,7 +240,7 @@ model Comment {
   postId     String
   body       String
   authorRole CommentRole
-  createdAt  DateTime @default(now())
+  createdAt  DateTime    @default(now())
 
   post Post @relation(fields: [postId], references: [id])
 }
@@ -254,6 +257,27 @@ model SpaceMessage {
   author User   @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
 
   @@index([spaceId, createdAt])
+}
+
+model SpaceInvite {
+  id         String     @id @default(uuid())
+  spaceId    String
+  email      String
+  role       TenantRole
+  token      String     @unique
+  createdBy  String
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  acceptedBy String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  space    Tenant @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  creator  User   @relation("spaceInvitesCreated", fields: [createdBy], references: [id])
+  accepter User?  @relation("spaceInvitesAccepted", fields: [acceptedBy], references: [id])
+
+  @@unique([spaceId, email])
+  @@index([spaceId, expiresAt])
 }
 
 model Idea {
@@ -288,16 +312,16 @@ model Asset {
 }
 
 model OutboxJob {
-  id         String    @id @default(uuid())
-  tenantId   String
-  type       String
-  payload    Json
-  status     JobStatus @default(queued)
-  attempts   Int       @default(0)
-  lastError  String?
-  nextRunAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id        String    @id @default(uuid())
+  tenantId  String
+  type      String
+  payload   Json
+  status    JobStatus @default(queued)
+  attempts  Int       @default(0)
+  lastError String?
+  nextRunAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 }
@@ -317,17 +341,17 @@ model AuditLog {
 }
 
 model InboxItem {
-  id          String          @id @default(uuid())
+  id          String         @id @default(uuid())
   spaceId     String
   actorType   InboxActorType
   type        InboxItemType
   title       String
   description String?
   actionUrl   String
-  entityKey   String          // ex: "post:456", "doc:789" pour dedup/merge
-  status      InboxStatus     @default(unread)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  entityKey   String // ex: "post:456", "doc:789" pour dedup/merge
+  status      InboxStatus    @default(unread)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   space Tenant @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
