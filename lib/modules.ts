@@ -1,14 +1,14 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 
-export type SpaceModuleName = 'messages' | 'social' | 'docs' | 'projects' | 'planning';
-export const AVAILABLE_SPACE_MODULES: SpaceModuleName[] = [
+export const AVAILABLE_SPACE_MODULES = [
   'messages',
   'social',
   'docs',
   'projects',
   'planning'
-];
+] as const;
+export type SpaceModuleName = (typeof AVAILABLE_SPACE_MODULES)[number];
 
 const normalizeModules = (value: Prisma.JsonValue | null | undefined): string[] => {
   if (!value) return [];
