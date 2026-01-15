@@ -299,7 +299,7 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
                         <span>
                           Expire le {new Date(invite.expiresAt).toLocaleDateString('fr-FR')}
                         </span>
-                        {expired && <Badge variant="destructive">Expirée</Badge>}
+                        {expired && <Badge variant="accent">Expirée</Badge>}
                       </div>
                     </div>
                     <div className="flex gap-2">
