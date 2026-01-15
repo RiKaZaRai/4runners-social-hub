@@ -3,6 +3,11 @@ import { prisma } from '@/lib/db';
 import { requireAuth, handleApiError } from '@/lib/api-auth';
 import { requireRateLimit } from '@/lib/rate-limit';
 import { isAgencyRole, isClientRole } from '@/lib/roles';
+import type { Prisma } from '@prisma/client';
+
+type InboxItemWithSpace = Prisma.InboxItemGetPayload<{
+  include: { space: { select: { id: true; name: true } } };
+}>;
 
 export async function GET() {
   try {
@@ -12,7 +17,7 @@ export async function GET() {
     const isAgency = isAgencyRole(auth.role);
     const isClient = isClientRole(auth.role);
 
-    let items;
+    let items: InboxItemWithSpace[] = [];
 
     if (isAgency) {
       // Agence voit tous les items
