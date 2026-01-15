@@ -66,6 +66,7 @@ export class SmtpEmailProvider implements EmailProvider {
     if (!this.transporter) {
       const { default: nodemailer } = await import('nodemailer');
       this.transporter = nodemailer.createTransport({
+        name: this.config.host,
         host: this.config.host,
         port: this.config.port,
         secure: this.config.secure,
