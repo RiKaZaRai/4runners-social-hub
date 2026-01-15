@@ -40,11 +40,12 @@ export default async function SpaceSettingsPage({
   }
 
   const modulesList = await getSpaceModules(params.id);
+  const socialSettingsRaw = tenant.socialSettings as SocialSettings | null;
   const socialSettings: SocialSettings = {
-    instagram_handle: tenant.socialSettings?.instagram_handle ?? null,
-    facebook_page: tenant.socialSettings?.facebook_page ?? null,
-    linkedin_page: tenant.socialSettings?.linkedin_page ?? null,
-    note: tenant.socialSettings?.note ?? null
+    instagram_handle: socialSettingsRaw?.instagram_handle ?? null,
+    facebook_page: socialSettingsRaw?.facebook_page ?? null,
+    linkedin_page: socialSettingsRaw?.linkedin_page ?? null,
+    note: socialSettingsRaw?.note ?? null
   };
 
   const moduleState = AVAILABLE_SPACE_MODULES.reduce<Record<SpaceModuleName, boolean>>(
