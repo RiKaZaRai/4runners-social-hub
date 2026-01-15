@@ -14,10 +14,10 @@ import { Badge } from '@/components/ui/badge';
 export default async function SpaceUsersPage({
   params
 }: {
-  params: { id?: string; spaceId?: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await requireSession();
-  const tenantId = params.id ?? params.spaceId;
+  const { id: tenantId } = await params;
 
   if (!tenantId) {
     redirect('/spaces');
