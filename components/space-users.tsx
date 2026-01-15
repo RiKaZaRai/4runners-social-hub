@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
@@ -35,9 +35,19 @@ type InviteRow = {
   acceptedAt: string | null;
 };
 
+type AgencyUserRow = {
+  id: string;
+  email: string;
+  name: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+};
+
 type SpaceUsersResponse = {
   members: MemberRow[];
   invites: InviteRow[];
+  availableAgencyUsers: AgencyUserRow[];
 };
 
 async function fetchUsers(spaceId: string) {
@@ -61,13 +71,19 @@ async function fetchCsrfToken() {
   return data.token as string;
 }
 
+function isAgencyRole(role: string): boolean {
+  return ['agency_admin', 'agency_manager', 'agency_production'].includes(role);
+}
+
 export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage: boolean }) {
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastKey, setToastKey] = useState(0);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showAgencyModal, setShowAgencyModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'viewer' | 'client_admin'>('viewer');
+  const [selectedAgencyUserId, setSelectedAgencyUserId] = useState('');
 
   const query = useQuery({
     queryKey: ['space-users', spaceId],
@@ -90,6 +106,11 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
 
   const members = query.data?.members ?? [];
   const invites = query.data?.invites ?? [];
+  const availableAgencyUsers = query.data?.availableAgencyUsers ?? [];
+
+  // Séparer les membres clients des membres agence
+  const clientMembers = members.filter((m) => !isAgencyRole(m.user.role));
+  const agencyMembers = members.filter((m) => isAgencyRole(m.user.role));
 
   const inviteMutation = useMutation({
     mutationFn: async (payload: { email: string; role: 'viewer' | 'client_admin' }) => {
@@ -119,6 +140,41 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
       query.refetch();
       setShowInviteModal(false);
       setInviteEmail('');
+    },
+    onError: (error) => {
+      setToastMessage(error instanceof Error ? error.message : 'Erreur');
+      setToastKey((prev) => prev + 1);
+    }
+  });
+
+  const addAgencyMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const token = csrfToken ?? (await fetchCsrfToken());
+      if (!csrfToken) {
+        setCsrfToken(token);
+      }
+      const response = await fetch(`/api/spaces/${spaceId}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': token
+        },
+        body: JSON.stringify({ userId, type: 'agency' })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error ?? 'Impossible d\'ajouter le membre agence');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      setToastMessage('Membre agence ajouté');
+      setToastKey((prev) => prev + 1);
+      query.refetch();
+      setShowAgencyModal(false);
+      setSelectedAgencyUserId('');
     },
     onError: (error) => {
       setToastMessage(error instanceof Error ? error.message : 'Erreur');
@@ -196,6 +252,12 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
     inviteMutation.mutate({ email: inviteEmail.trim(), role: inviteRole });
   };
 
+  const handleAddAgencySubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedAgencyUserId) return;
+    addAgencyMutation.mutate(selectedAgencyUserId);
+  };
+
   const toastActive = toastMessage && toastKey > 0;
 
   return (
@@ -221,51 +283,101 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
             <Link href={`/spaces/${spaceId}/overview`}>Retour à l'espace</Link>
           </Button>
           {canManage && (
-            <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
-              <DialogTrigger asChild>
-                <Button size="sm">Inviter un membre</Button>
-              </DialogTrigger>
-              <DialogContent className="space-y-4">
-                <DialogHeader>
-                  <DialogTitle>Nouvelle invitation</DialogTitle>
-                  <DialogDescription>Envoyez une invitation à un utilisateur client.</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleInviteSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="invite-email">Email</Label>
-                    <Input
-                      id="invite-email"
-                      type="email"
-                      required
-                      value={inviteEmail}
-                      onChange={(event) => setInviteEmail(event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="invite-role">Rôle</Label>
-                    <select
-                      id="invite-role"
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      value={inviteRole}
-                      onChange={(event) =>
-                        setInviteRole(event.target.value as 'viewer' | 'client_admin')
-                      }
-                    >
-                      <option value="viewer">Client user (lecture)</option>
-                      <option value="client_admin">Client admin</option>
-                    </select>
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setShowInviteModal(false)}>
-                      Annuler
-                    </Button>
-                    <Button type="submit" disabled={inviteMutation.isPending}>
-                      {inviteMutation.isPending ? 'Envoi...' : 'Envoyer'}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <>
+              <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
+                <DialogTrigger asChild>
+                  <Button size="sm">Inviter un client</Button>
+                </DialogTrigger>
+                <DialogContent className="space-y-4">
+                  <DialogHeader>
+                    <DialogTitle>Inviter un client</DialogTitle>
+                    <DialogDescription>
+                      Envoyez une invitation par email. Si l'utilisateur n'existe pas, il sera créé automatiquement.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleInviteSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-email">Email</Label>
+                      <Input
+                        id="invite-email"
+                        type="email"
+                        required
+                        value={inviteEmail}
+                        onChange={(event) => setInviteEmail(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-role">Rôle</Label>
+                      <select
+                        id="invite-role"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        value={inviteRole}
+                        onChange={(event) =>
+                          setInviteRole(event.target.value as 'viewer' | 'client_admin')
+                        }
+                      >
+                        <option value="viewer">Client user (lecture)</option>
+                        <option value="client_admin">Client admin</option>
+                      </select>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setShowInviteModal(false)}>
+                        Annuler
+                      </Button>
+                      <Button type="submit" disabled={inviteMutation.isPending}>
+                        {inviteMutation.isPending ? 'Envoi...' : 'Envoyer'}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              {availableAgencyUsers.length > 0 && (
+                <Dialog open={showAgencyModal} onOpenChange={setShowAgencyModal}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">Ajouter agence</Button>
+                  </DialogTrigger>
+                  <DialogContent className="space-y-4">
+                    <DialogHeader>
+                      <DialogTitle>Ajouter un membre agence</DialogTitle>
+                      <DialogDescription>
+                        Associez un membre de l'agence à cet espace pour qu'il puisse le gérer.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddAgencySubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="agency-user">Membre agence</Label>
+                        <select
+                          id="agency-user"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          value={selectedAgencyUserId}
+                          onChange={(event) => setSelectedAgencyUserId(event.target.value)}
+                          required
+                        >
+                          <option value="">Sélectionnez un membre</option>
+                          {availableAgencyUsers.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {[user.firstName, user.lastName].filter(Boolean).join(' ') ||
+                                user.name ||
+                                user.email}{' '}
+                              ({user.role.replace('agency_', '')})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setShowAgencyModal(false)}>
+                          Annuler
+                        </Button>
+                        <Button type="submit" disabled={addAgencyMutation.isPending}>
+                          {addAgencyMutation.isPending ? 'Ajout...' : 'Ajouter'}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -273,7 +385,7 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
       {canManage && (
         <Card>
           <CardHeader className="flex items-center justify-between gap-2">
-            <CardTitle>Invitations</CardTitle>
+            <CardTitle>Invitations clients</CardTitle>
             <span className="text-xs text-muted-foreground">
               {invites.length} en attente
             </span>
@@ -322,18 +434,17 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="flex items-center justify-between gap-2">
-          <CardTitle>Membres actifs</CardTitle>
-          <span className="text-xs text-muted-foreground">
-            {members.length} membre(s)
-          </span>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucun membre pour le moment.</p>
-          ) : (
-            members.map((member) => (
+      {/* Membres agence */}
+      {agencyMembers.length > 0 && (
+        <Card>
+          <CardHeader className="flex items-center justify-between gap-2">
+            <CardTitle>Equipe agence</CardTitle>
+            <span className="text-xs text-muted-foreground">
+              {agencyMembers.length} membre(s)
+            </span>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {agencyMembers.map((member) => (
               <div
                 key={member.id}
                 className="flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
@@ -345,9 +456,54 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
                       member.user.email}
                   </p>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline" className="text-[10px] uppercase">
-                      {member.user.role}
+                    <Badge variant="accent" className="text-[10px] uppercase">
+                      {member.user.role.replace('agency_', '')}
                     </Badge>
+                    <span>{member.user.email}</span>
+                  </div>
+                </div>
+                {canManage && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => removeMutation.mutate(member.user.id)}
+                      disabled={removeMutation.isPending}
+                    >
+                      Retirer
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Membres clients */}
+      <Card>
+        <CardHeader className="flex items-center justify-between gap-2">
+          <CardTitle>Membres clients</CardTitle>
+          <span className="text-xs text-muted-foreground">
+            {clientMembers.length} membre(s)
+          </span>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {clientMembers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucun membre client pour le moment.</p>
+          ) : (
+            clientMembers.map((member) => (
+              <div
+                key={member.id}
+                className="flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-medium">
+                    {[member.user.firstName, member.user.lastName].filter(Boolean).join(' ') ||
+                      member.user.name ||
+                      member.user.email}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <Badge variant={member.role === 'client_admin' ? 'accent' : 'outline'}>
                       {member.role === 'client_admin' ? 'Client admin' : 'Client user'}
                     </Badge>

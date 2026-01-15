@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db';
 import { requireAuth, handleApiError, requireActiveTenantAccess } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
 import { requireRateLimit } from '@/lib/rate-limit';
-import { isAgencyRole, isClientRole } from '@/lib/roles';
+import { isAgencyAdmin, isAgencyRole, isClientRole } from '@/lib/roles';
 import { createInboxItem } from '@/lib/inbox';
 import { INVITE_EXPIRATION_MS, normalizeEmail, isInviteExpired } from '@/lib/space-users';
 import { requireManageAccess, ensureTenantExists } from '@/lib/space-guards';
@@ -13,6 +13,11 @@ import { requireManageAccess, ensureTenantExists } from '@/lib/space-guards';
 const inviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(['viewer', 'client_admin'])
+});
+
+const addAgencyMemberSchema = z.object({
+  userId: z.string().uuid(),
+  type: z.literal('agency')
 });
 
 export async function GET(
@@ -32,31 +37,68 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const [memberships, invites] = await Promise.all([
-      prisma.tenantMembership.findMany({
-        where: { tenantId: spaceId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              phone: true,
-              role: true
-            }
+    // Récupérer les membres existants (excluant les agency_admin)
+    const memberships = await prisma.tenantMembership.findMany({
+      where: {
+        tenantId: spaceId,
+        // Exclure les agency_admin qui ont accès à tout par défaut
+        user: { role: { not: 'agency_admin' } }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            role: true
           }
-        },
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.spaceInvite.findMany({
-        where: { spaceId },
-        orderBy: { createdAt: 'desc' }
-      })
-    ]);
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
-    return NextResponse.json({ members: memberships, invites });
+    const invites = await prisma.spaceInvite.findMany({
+      where: { spaceId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Pour les admins/managers agence: récupérer les utilisateurs agence disponibles
+    let availableAgencyUsers: Array<{
+      id: string;
+      name: string | null;
+      email: string;
+      firstName: string | null;
+      lastName: string | null;
+      role: string;
+    }> = [];
+
+    if (isAgencyAdmin(auth.role)) {
+      const memberUserIds = memberships.map((m) => m.user.id);
+      availableAgencyUsers = await prisma.user.findMany({
+        where: {
+          role: { in: ['agency_manager', 'agency_production'] },
+          id: { notIn: memberUserIds }
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true
+        },
+        orderBy: { email: 'asc' }
+      });
+    }
+
+    return NextResponse.json({
+      members: memberships,
+      invites,
+      availableAgencyUsers
+    });
   } catch (error) {
     return handleApiError(error);
   }
@@ -76,24 +118,93 @@ export async function POST(
     const tenant = await ensureTenantExists(spaceId);
 
     const payload = await req.json();
+
+    // Cas 1: Ajout d'un utilisateur agence (association directe, sans invitation)
+    const agencyParsed = addAgencyMemberSchema.safeParse(payload);
+    if (agencyParsed.success) {
+      // Seul un admin agence peut ajouter des utilisateurs agence
+      if (!isAgencyAdmin(auth.role)) {
+        return NextResponse.json(
+          { error: 'Seuls les admins agence peuvent ajouter des membres agence' },
+          { status: 403 }
+        );
+      }
+
+      const agencyUser = await prisma.user.findUnique({
+        where: { id: agencyParsed.data.userId }
+      });
+
+      if (!agencyUser) {
+        return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+      }
+
+      if (!isAgencyRole(agencyUser.role) || isAgencyAdmin(agencyUser.role)) {
+        return NextResponse.json(
+          { error: 'Seuls les managers et production agence peuvent être ajoutés' },
+          { status: 400 }
+        );
+      }
+
+      const existingMembership = await prisma.tenantMembership.findUnique({
+        where: { tenantId_userId: { tenantId: spaceId, userId: agencyUser.id } }
+      });
+
+      if (existingMembership) {
+        return NextResponse.json({ error: 'Utilisateur déjà membre' }, { status: 409 });
+      }
+
+      const membership = await prisma.tenantMembership.create({
+        data: {
+          tenantId: spaceId,
+          userId: agencyUser.id,
+          role: 'viewer' // Les utilisateurs agence ont le rôle viewer dans le membership
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          }
+        }
+      });
+
+      return NextResponse.json(membership, { status: 201 });
+    }
+
+    // Cas 2: Invitation d'un utilisateur client (par email)
     const parsed = inviteSchema.safeParse(payload);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
     const normalizedEmail = normalizeEmail(parsed.data.email);
-    const targetUser = await prisma.user.findFirst({
+    let targetUser = await prisma.user.findFirst({
       where: {
         email: { equals: normalizedEmail, mode: 'insensitive' }
       }
     });
 
+    // Si l'utilisateur n'existe pas, on le crée avec le rôle client_user
     if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      targetUser = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          role: 'client_user'
+        }
+      });
     }
 
+    // Vérifier que c'est bien un utilisateur client (pas agence)
     if (!isClientRole(targetUser.role)) {
-      return NextResponse.json({ error: 'Only client users can be invited' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Seuls les utilisateurs clients peuvent être invités via ce formulaire' },
+        { status: 400 }
+      );
     }
 
     const existingMembership = await prisma.tenantMembership.findUnique({
