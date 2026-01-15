@@ -7,11 +7,17 @@ export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export function isInviteExpired(invite: Pick<SpaceInvite, 'expiresAt' | 'acceptedAt'>, now = new Date()) {
+type InviteTimestamp = string | Date | null;
+
+export function isInviteExpired(
+  invite: { expiresAt: InviteTimestamp; acceptedAt: InviteTimestamp },
+  now = new Date()
+) {
   if (invite.acceptedAt) {
     return true;
   }
-  return new Date(invite.expiresAt).getTime() <= now.getTime();
+  const expiresAt = new Date(invite.expiresAt ?? undefined);
+  return expiresAt.getTime() <= now.getTime();
 }
 
 export function canManageSpace(role: Role | null | undefined, hasMembership: boolean) {
