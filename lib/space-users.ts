@@ -16,7 +16,13 @@ export function isInviteExpired(
   if (invite.acceptedAt) {
     return true;
   }
-  const expiresAt = new Date(invite.expiresAt ?? undefined);
+  const expiresValue = invite.expiresAt ?? now;
+  const expiresAt =
+    typeof expiresValue === 'string' || typeof expiresValue === 'number'
+      ? new Date(expiresValue)
+      : expiresValue instanceof Date
+      ? new Date(expiresValue)
+      : now;
   return expiresAt.getTime() <= now.getTime();
 }
 
