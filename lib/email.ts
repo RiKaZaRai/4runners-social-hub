@@ -1,3 +1,5 @@
+import type { Transporter } from 'nodemailer';
+
 export type EmailConfig = {
   provider: string;
   host: string;
@@ -53,7 +55,7 @@ export interface EmailProvider {
 }
 
 export class SmtpEmailProvider implements EmailProvider {
-  private transporter: any;
+  private transporter: Transporter | null = null;
   private config: EmailConfig;
 
   constructor(config: EmailConfig) {
