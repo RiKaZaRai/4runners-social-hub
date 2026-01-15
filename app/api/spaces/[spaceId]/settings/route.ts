@@ -65,16 +65,23 @@ export async function processSpaceSettingsPayload({
   return { modules, socialSettings };
 }
 
-export async function GET(req: NextRequest, { params }: { params: { spaceId: string } }) {
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ spaceId: string }> }
+) {
   try {
     const auth = await requireAuth();
-    return await handleGET(auth, params.spaceId);
+    const { spaceId } = await context.params;
+    return await handleGET(auth, spaceId);
   } catch (error) {
     return handleApiError(error);
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { spaceId: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ spaceId: string }> }
+) {
   try {
     const auth = await requireAuth();
     const payload = await req.json();
