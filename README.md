@@ -69,3 +69,21 @@ MINIO_ROOT_PASSWORD=change-me-very-long
 MINIO_BUCKET=octopus-media
 MINIO_REGION=us-east-1
 ```
+
+## Email (SMTP)
+
+- **Variables requises** (voir `.env.example` pour les valeurs exemples) :  
+  `MAIL_PROVIDER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_SECURE`, `MAIL_USER`, `MAIL_PASS`,  
+  `MAIL_FROM_NAME`, `MAIL_FROM_EMAIL`, `MAIL_REPLY_TO`.
+- **Ne jamais exposer `MAIL_PASS`** dans l’UI ou les logs (seuls `provider`, `host`, `port`, `secure` et `from` sont affichés).
+- **Tester la configuration** depuis l’espace admin :
+  1. Aller dans `/settings`, cliquer sur la carte “Email (SMTP)”.
+ 2. Vérifier la carte de statut (provider, host, from, reply-to, domaine).
+ 3. Saisir une adresse de test et lancer “Envoyer un email de test”.
+ 4. L’envoi est limité à 3 essais par 10 minutes pour chaque admin.
+- **Endpoint API** :
+  - `POST /api/admin/email/test` `{ to: string }`
+  - 403 si l’utilisateur n’est pas admin agence.
+  - 400 si l’email est invalide.
+  - 500 / `MAIL_NOT_CONFIGURED` si la configuration manque.
+  - Retour JSON `{ ok: true }` sur succès.

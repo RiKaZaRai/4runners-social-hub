@@ -4,7 +4,7 @@ import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { isAgencyAdmin } from '@/lib/roles';
-import { Users, AlertTriangle, Link2, Shield } from 'lucide-react';
+import { Users, AlertTriangle, Link2, Shield, Mail } from 'lucide-react';
 
 export default async function SettingsPage() {
   const session = await requireSession();
@@ -47,6 +47,13 @@ export default async function SettingsPage() {
       description: 'Parametres de securite et audit',
       href: '/settings/security',
       icon: Shield
+    }
+    ,
+    {
+      title: 'Email (SMTP)',
+      description: 'Verifier et tester vos variables SMTP',
+      href: '/settings/email',
+      icon: Mail
     }
   ];
 

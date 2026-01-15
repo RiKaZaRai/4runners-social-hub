@@ -9,7 +9,8 @@ const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   auth: { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 minutes
   api: { maxRequests: 100, windowMs: 60 * 1000 }, // 100 per minute
   upload: { maxRequests: 10, windowMs: 60 * 1000 }, // 10 per minute
-  strict: { maxRequests: 30, windowMs: 60 * 1000 } // 30 per minute
+  strict: { maxRequests: 30, windowMs: 60 * 1000 }, // 30 per minute
+  emailTest: { maxRequests: 3, windowMs: 10 * 60 * 1000 } // 3 per 10 minutes
 };
 
 /**
