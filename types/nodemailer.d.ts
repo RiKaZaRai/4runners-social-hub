@@ -3,6 +3,7 @@ declare module 'nodemailer' {
     host?: string;
     port?: number;
     secure?: boolean;
+    name?: string;
     auth?: {
       user?: string;
       pass?: string;
