@@ -15,6 +15,10 @@ export default async function SpaceUsersPage({ params }: { params: { id: string 
   const session = await requireSession();
   const { id } = params;
 
+  if (!id) {
+    redirect('/spaces');
+  }
+
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { role: true }
