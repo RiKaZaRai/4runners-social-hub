@@ -54,7 +54,7 @@ export default async function SpaceMessagesPage({
     }
 
     if (!tenant.active) {
-      redirect('/select-tenant');
+      redirect('/spaces');
     }
   }
 

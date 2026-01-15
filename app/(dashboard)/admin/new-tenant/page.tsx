@@ -31,7 +31,7 @@ export default async function NewTenantPage({
   });
 
   if (!canCreateClients(user?.role)) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   async function createTenant(formData: FormData) {
@@ -44,7 +44,7 @@ export default async function NewTenantPage({
     });
 
     if (!canCreateClients(user?.role)) {
-      redirect('/select-tenant?error=unauthorized');
+      redirect('/spaces');
     }
 
     const name = formData.get('name') as string;

@@ -11,7 +11,7 @@ export default async function IdeasPage({
 }) {
   await requireSession();
   const tenantId = searchParams.tenantId;
-  if (!tenantId) redirect('/select-tenant');
+  if (!tenantId) redirect('/spaces');
 
   return (
     <div className="space-y-6">

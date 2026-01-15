@@ -49,7 +49,7 @@ export default async function SpaceUsersPage({
   }
 
   if (isClient && !tenant.active) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   const membership = await prisma.tenantMembership.findUnique({

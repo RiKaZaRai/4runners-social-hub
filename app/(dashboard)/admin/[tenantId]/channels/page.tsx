@@ -29,7 +29,7 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
   });
 
   if (!user || isAgencyProduction(user.role) || isClientRole(user.role)) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   const isAdmin = isAgencyAdmin(user.role);
@@ -41,7 +41,7 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
     : null;
 
   if (!isAdmin && !membership) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   // Get tenant with channels

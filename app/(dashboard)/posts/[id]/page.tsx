@@ -18,7 +18,7 @@ export default async function PostDetailPage({
 }) {
   const session = await requireSession();
   const tenantId = searchParams.tenantId;
-  if (!tenantId) redirect('/select-tenant');
+  if (!tenantId) redirect('/spaces');
 
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
@@ -32,10 +32,10 @@ export default async function PostDetailPage({
       where: { tenantId_userId: { tenantId, userId: session.userId } }
     });
     if (!membership && !isClientRole(currentUser.role)) {
-      redirect('/select-tenant');
+      redirect('/spaces');
     }
     if (isClientRole(currentUser.role) && !membership) {
-      redirect('/select-tenant');
+      redirect('/spaces');
     }
   }
 

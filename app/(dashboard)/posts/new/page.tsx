@@ -15,7 +15,7 @@ export default async function NewPostPage({
 }) {
   const session = await requireSession();
   const tenantId = searchParams.tenantId;
-  if (!tenantId) redirect('/select-tenant');
+  if (!tenantId) redirect('/spaces');
 
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
@@ -29,7 +29,7 @@ export default async function NewPostPage({
     const membership = await prisma.tenantMembership.findUnique({
       where: { tenantId_userId: { tenantId, userId: session.userId } }
     });
-    if (!membership) redirect('/select-tenant');
+    if (!membership) redirect('/spaces');
   }
 
   const channels = await prisma.tenantChannel.findMany({

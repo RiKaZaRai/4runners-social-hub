@@ -23,7 +23,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
   const isManager = isAgencyManager(user?.role) && !!membership;
 
   if (!isAdmin && !isManager) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   // Get tenant with detailed information

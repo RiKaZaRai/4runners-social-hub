@@ -67,7 +67,7 @@ export default async function PostsPage({
 }) {
   const session = await requireSession();
   const tenantId = searchParams.tenantId;
-  if (!tenantId) redirect('/select-tenant');
+  if (!tenantId) redirect('/spaces');
 
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
@@ -88,7 +88,7 @@ export default async function PostsPage({
 
   // If tenant doesn't exist or is inactive, redirect (unless admin)
   if (!tenant || (!isAdmin && !tenant.active)) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   const membership = await prisma.tenantMembership.findUnique({
@@ -96,7 +96,7 @@ export default async function PostsPage({
   });
 
   if (!isAdmin && !membership) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   const posts = await prisma.post.findMany({

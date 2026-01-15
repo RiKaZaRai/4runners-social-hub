@@ -17,7 +17,7 @@ export default async function EditTenantPage({ params }: { params: { tenantId: s
   });
 
   if (user?.role !== 'agency_admin') {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   // Get tenant

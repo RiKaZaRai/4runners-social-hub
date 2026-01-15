@@ -22,7 +22,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
   });
 
   if (!currentUser || isAgencyProduction(currentUser.role) || isClientRole(currentUser.role)) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   const isAdmin = isAgencyAdmin(currentUser.role);
@@ -34,7 +34,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     : null;
 
   if (!isAdmin && !managerMembership) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   const tenant = await prisma.tenant.findUnique({
@@ -91,18 +91,18 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     });
 
     if (!actor || isAgencyProduction(actor.role) || isClientRole(actor.role)) {
-      redirect('/select-tenant');
+      redirect('/spaces');
     }
 
     const actorIsAdmin = isAgencyAdmin(actor.role);
     const actorIsManager = isAgencyManager(actor.role);
 
     if (!actorIsAdmin) {
-      if (!actorIsManager) redirect('/select-tenant');
+      if (!actorIsManager) redirect('/spaces');
       const membership = await prisma.tenantMembership.findUnique({
         where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
       });
-      if (!membership) redirect('/select-tenant');
+      if (!membership) redirect('/spaces');
     }
 
     const userId = formData.get('userId') as string;
@@ -138,7 +138,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     });
 
     if (!actor || !isAgencyAdmin(actor.role)) {
-      redirect('/select-tenant');
+      redirect('/spaces');
     }
 
     const membershipId = formData.get('membershipId') as string;
@@ -182,18 +182,18 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     });
 
     if (!actor || isAgencyProduction(actor.role) || isClientRole(actor.role)) {
-      redirect('/select-tenant');
+      redirect('/spaces');
     }
 
     const actorIsAdmin = isAgencyAdmin(actor.role);
     const actorIsManager = isAgencyManager(actor.role);
 
     if (!actorIsAdmin) {
-      if (!actorIsManager) redirect('/select-tenant');
+      if (!actorIsManager) redirect('/spaces');
       const membership = await prisma.tenantMembership.findUnique({
         where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
       });
-      if (!membership) redirect('/select-tenant');
+      if (!membership) redirect('/spaces');
     }
 
     const membershipId = formData.get('membershipId') as string;

@@ -62,7 +62,7 @@ export default async function SpaceOverviewPage({
 
   // Block inactive tenants for clients
   if (isClient && !tenant.active) {
-    redirect('/select-tenant');
+    redirect('/spaces');
   }
 
   const recentPosts = await prisma.post.findMany({

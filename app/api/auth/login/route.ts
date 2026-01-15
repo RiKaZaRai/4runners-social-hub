@@ -78,7 +78,7 @@ export async function POST(req: Request) {
       // Clean up old magic link tokens for this user
       await prisma.magicLinkToken.deleteMany({ where: { email: user.email } });
 
-      return NextResponse.redirect(redirectUrl('/select-tenant'));
+      return NextResponse.redirect(redirectUrl('/spaces'));
     }
 
     const email = form.get('email')?.toString();
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
         }
       });
 
-      return NextResponse.redirect(redirectUrl('/select-tenant'));
+      return NextResponse.redirect(redirectUrl('/spaces'));
     }
 
     if (!email || !password) {
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
         });
       }
 
-      return NextResponse.redirect(redirectUrl('/select-tenant'));
+      return NextResponse.redirect(redirectUrl('/spaces'));
     }
 
     // Validate email format
@@ -207,7 +207,7 @@ export async function POST(req: Request) {
       }
     });
 
-    return NextResponse.redirect(redirectUrl('/select-tenant'));
+    return NextResponse.redirect(redirectUrl('/spaces'));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === 'RATE_LIMIT_EXCEEDED') {
