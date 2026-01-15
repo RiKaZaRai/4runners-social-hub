@@ -137,6 +137,10 @@ export function handleApiError(error: unknown): NextResponse {
           { error: 'Too many requests. Please try again later.' },
           { status: 429 }
         );
+      case 'MODULE_DISABLED':
+        return NextResponse.json({ error: 'Module désactivé pour cet espace' }, { status: 403 });
+      case 'INVALID_TRANSITION':
+        return NextResponse.json({ error: 'Transition invalide' }, { status: 400 });
       default:
         console.error('API Error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

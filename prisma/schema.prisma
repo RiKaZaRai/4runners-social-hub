@@ -60,6 +60,14 @@ enum JobStatus {
   completed
 }
 
+enum SpaceModule {
+  messages
+  social
+  docs
+  projects
+  planning
+}
+
 enum InboxActorType {
   agency
   client
@@ -95,6 +103,8 @@ model Tenant {
   inboxItems    InboxItem[]
   spaceMessages SpaceMessage[]
   spaceInvites  SpaceInvite[]
+  modules       Json               @default("[]")
+  socialSettings Json              @default("{}")
 }
 
 model User {

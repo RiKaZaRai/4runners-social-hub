@@ -246,6 +246,37 @@ export function SpaceUsers({ spaceId, canManage }: { spaceId: string; canManage:
     }
   });
 
+  const revokeInviteMutation = useMutation({
+    mutationFn: async (inviteId: string) => {
+      const token = csrfToken ?? (await fetchCsrfToken());
+      if (!csrfToken) {
+        setCsrfToken(token);
+      }
+      const response = await fetch(`/api/spaces/${spaceId}/users?inviteId=${inviteId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-csrf-token': token
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error ?? 'Impossible de révoquer l\'invitation');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      query.refetch();
+      setToastMessage('Invitation révoquée');
+      setToastKey((prev) => prev + 1);
+    },
+    onError: (error) => {
+      setToastMessage(error instanceof Error ? error.message : 'Erreur');
+      setToastKey((prev) => prev + 1);
+    }
+  });
+
   const handleInviteSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!inviteEmail.trim()) return;

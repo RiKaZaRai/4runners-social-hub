@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, Home, Inbox, Settings } from 'lucide-react';
+import { Building2, Home, Inbox, Settings, Link2 } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     include: { tenant: true }
   });
   const tenants = isAdmin
-    ? await prisma.tenant.findMany({ orderBy: { name: 'asc' } })
+    ? await prisma.tenant.findMany({
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, modules: true }
+      })
     : memberships.map((membership) => membership.tenant);
   const spacesPreview = tenants.slice(0, 5);
 
@@ -83,6 +86,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                       <span className="flex-1 truncate">{space.name}</span>
                     </Link>
+                    {space.modules?.includes('social') && (
+                      <Link
+                        className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        href={`/spaces/${space.id}/social`}
+                      >
+                        <Link2 className="h-3.5 w-3.5" />
+                        Réseaux
+                      </Link>
+                    )}
                   </li>
                 ))}
                 {spacesPreview.length === 0 && (

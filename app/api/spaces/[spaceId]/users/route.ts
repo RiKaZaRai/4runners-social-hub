@@ -9,6 +9,7 @@ import { isAgencyAdmin, isAgencyRole, isClientRole } from '@/lib/roles';
 import { createInboxItem } from '@/lib/inbox';
 import { INVITE_EXPIRATION_MS, normalizeEmail, isInviteExpired } from '@/lib/space-users';
 import { requireManageAccess, ensureTenantExists } from '@/lib/space-guards';
+import { ensureEmailConfig, SmtpEmailProvider, MailError } from '@/lib/email';
 
 const inviteSchema = z.object({
   email: z.string().email(),
@@ -265,7 +266,79 @@ export async function POST(
       status: 'unread'
     });
 
+    // Envoyer l'email d'invitation
+    try {
+      const config = ensureEmailConfig();
+      const emailProvider = new SmtpEmailProvider(config);
+      const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+      const acceptUrl = `${baseUrl}/api/spaces/${spaceId}/users/accept?token=${token}`;
+
+      await emailProvider.sendMail({
+        to: normalizedEmail,
+        subject: `Invitation à rejoindre l'espace ${tenant.name}`,
+        text: `Bonjour,
+
+Vous avez été invité(e) à rejoindre l'espace "${tenant.name}" sur 4runners Social Hub.
+
+Rôle attribué: ${parsed.data.role === 'client_admin' ? 'Client admin' : 'Client user'}
+
+Pour accepter cette invitation, cliquez sur le lien ci-dessous:
+${acceptUrl}
+
+Ce lien expire dans 7 jours.
+
+Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email.
+
+Cordialement,
+L'équipe 4runners`
+      });
+    } catch (emailError) {
+      // Log l'erreur mais ne bloque pas l'invitation
+      if (emailError instanceof MailError) {
+        console.warn('Email not sent (mail not configured):', emailError.code);
+      } else {
+        console.error('Failed to send invitation email:', emailError);
+      }
+    }
+
     return NextResponse.json(invite, { status: wasNew ? 201 : 200 });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+// DELETE - Révoquer une invitation
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ spaceId: string }> }
+) {
+  try {
+    const { spaceId } = await context.params;
+    const auth = await requireAuth();
+    await requireRateLimit(auth.userId, 'api');
+    await requireCsrfToken(req);
+    await requireManageAccess(auth, spaceId);
+
+    const { searchParams } = new URL(req.url);
+    const inviteId = searchParams.get('inviteId');
+
+    if (!inviteId) {
+      return NextResponse.json({ error: 'inviteId requis' }, { status: 400 });
+    }
+
+    const invite = await prisma.spaceInvite.findUnique({
+      where: { id: inviteId }
+    });
+
+    if (!invite || invite.spaceId !== spaceId) {
+      return NextResponse.json({ error: 'Invitation non trouvée' }, { status: 404 });
+    }
+
+    await prisma.spaceInvite.delete({
+      where: { id: inviteId }
+    });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     return handleApiError(error);
   }
