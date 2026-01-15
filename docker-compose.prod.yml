@@ -18,6 +18,15 @@ services:
       - MINIO_REGION=${MINIO_REGION}
       - ADMIN_LOGIN=${ADMIN_LOGIN}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - MAIL_PROVIDER=${MAIL_PROVIDER}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_SECURE=${MAIL_SECURE}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
+      - MAIL_FROM_EMAIL=${MAIL_FROM_EMAIL}
+      - MAIL_REPLY_TO=${MAIL_REPLY_TO}
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,6 +59,15 @@ services:
       - MINIO_REGION=${MINIO_REGION}
       - ADMIN_LOGIN=${ADMIN_LOGIN}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - MAIL_PROVIDER=${MAIL_PROVIDER}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_SECURE=${MAIL_SECURE}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
+      - MAIL_FROM_EMAIL=${MAIL_FROM_EMAIL}
+      - MAIL_REPLY_TO=${MAIL_REPLY_TO}
     depends_on:
       postgres:
         condition: service_healthy
