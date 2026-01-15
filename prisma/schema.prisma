@@ -60,6 +60,25 @@ enum JobStatus {
   completed
 }
 
+enum InboxActorType {
+  agency
+  client
+  system
+}
+
+enum InboxItemType {
+  message
+  validation
+  signal
+}
+
+enum InboxStatus {
+  unread
+  open
+  done
+  blocked
+}
+
 model Tenant {
   id          String             @id @default(uuid())
   name        String             @unique
@@ -73,6 +92,7 @@ model Tenant {
   channels    TenantChannel[]
   outboxJobs  OutboxJob[]
   auditLogs   AuditLog[]
+  inboxItems  InboxItem[]
 }
 
 model User {
@@ -278,4 +298,24 @@ model AuditLog {
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   actor  User?  @relation(fields: [actorId], references: [id])
+}
+
+model InboxItem {
+  id          String          @id @default(uuid())
+  spaceId     String
+  actorType   InboxActorType
+  type        InboxItemType
+  title       String
+  description String?
+  actionUrl   String
+  entityKey   String          // ex: "post:456", "doc:789" pour dedup/merge
+  status      InboxStatus     @default(unread)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  space Tenant @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, entityKey])
+  @@index([spaceId, status])
+  @@index([updatedAt])
 }
