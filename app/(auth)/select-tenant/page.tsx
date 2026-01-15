@@ -18,7 +18,7 @@ export default async function SelectTenantPage() {
     redirect('/admin');
   }
   if (isAgencyRole(user?.role)) {
-    redirect('/clients');
+    redirect('/spaces');
   }
 
   const memberships = await prisma.tenantMembership.findMany({

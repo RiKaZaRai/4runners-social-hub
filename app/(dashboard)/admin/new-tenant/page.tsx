@@ -72,8 +72,8 @@ export default async function NewTenantPage({
 
       revalidatePath('/admin/new-tenant');
       revalidatePath('/admin/new-tenant', 'layout');
-      revalidatePath('/clients');
-      revalidatePath('/clients', 'layout');
+      revalidatePath('/spaces');
+      revalidatePath('/spaces', 'layout');
       revalidatePath('/posts');
       revalidatePath('/home');
       revalidatePath('/home', 'layout');

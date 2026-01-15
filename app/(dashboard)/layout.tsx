@@ -78,9 +78,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   Espaces
                 </p>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/spaces/new">Nouveau</Link>
-                </Button>
+                {canCreateClients(currentUser?.role) && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/spaces/new">Nouveau</Link>
+                  </Button>
+                )}
               </div>
               <ul className="mt-3 space-y-2 text-sm">
                 {spacesPreview.map((space) => (
@@ -100,11 +102,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   </li>
                 )}
               </ul>
-              <div className="mt-2 text-xs text-muted-foreground">
-                <Link className="text-primary hover:underline" href="/spaces">
+              {tenants.length > 0 && (
+                <Link
+                  href="/spaces"
+                  className="mt-3 block text-xs text-muted-foreground hover:text-foreground"
+                >
                   Voir tous les espaces →
                 </Link>
-              </div>
+              )}
             </div>
 
           </nav>

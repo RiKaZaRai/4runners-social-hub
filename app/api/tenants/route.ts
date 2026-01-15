@@ -43,9 +43,9 @@ export async function POST(req: Request) {
       return created;
     });
 
-    revalidatePath('/clients');
+    revalidatePath('/spaces');
     revalidatePath('/posts');
-    return NextResponse.redirect(new URL(`/clients?tenantId=${tenant.id}`, req.url));
+    return NextResponse.redirect(new URL(`/spaces?tenantId=${tenant.id}`, req.url));
   } catch (error) {
     return handleApiError(error);
   }

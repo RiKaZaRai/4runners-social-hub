@@ -152,7 +152,7 @@ export default async function PostsPage({
               {(isAdmin || isManager) && (
                 <Link
                   className="text-sm text-muted-foreground hover:text-primary"
-                  href={`/clients?tenantId=${tenantId}`}
+                  href={`/spaces?tenantId=${tenantId}`}
                 >
                   Gerer client
                 </Link>

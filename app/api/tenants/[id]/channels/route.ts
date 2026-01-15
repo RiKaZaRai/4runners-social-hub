@@ -49,7 +49,7 @@ export async function POST(
       }
     });
 
-    return NextResponse.redirect(new URL(`/clients?tenantId=${resolvedParams.id}`, req.url));
+    return NextResponse.redirect(new URL(`/spaces?tenantId=${resolvedParams.id}`, req.url));
   } catch (error) {
     return handleApiError(error);
   }

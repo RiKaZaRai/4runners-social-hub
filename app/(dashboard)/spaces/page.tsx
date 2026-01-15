@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import Link from 'next/link';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getCsrfToken } from '@/lib/csrf';
@@ -12,17 +13,16 @@ import {
   canCreateClients,
   isAgencyAdmin,
   isAgencyManager,
-  isAgencyProduction,
   isClientRole
 } from '@/lib/roles';
 import crypto from 'crypto';
 import { TenantDeleteButton } from '@/components/tenant-delete-button';
 import { TenantToggleButton } from '@/components/tenant-toggle-button';
 
-export default async function ClientsPage({
+export default async function SpacesPage({
   searchParams
 }: {
-  searchParams: { tenantId?: string };
+  searchParams: Promise<{ tenantId?: string }>;
 }) {
   const session = await requireSession();
   const currentUser = await prisma.user.findUnique({ where: { id: session.userId } });
@@ -30,9 +30,9 @@ export default async function ClientsPage({
     redirect('/posts');
   }
 
+  const resolvedSearchParams = await searchParams;
   const isAdmin = isAgencyAdmin(currentUser.role);
   const isManager = isAgencyManager(currentUser.role);
-  const isProduction = isAgencyProduction(currentUser.role);
 
   const memberships = await prisma.tenantMembership.findMany({
     where: { userId: session.userId },
@@ -45,7 +45,7 @@ export default async function ClientsPage({
     include: { channels: true }
   });
 
-  const activeTenantId = searchParams.tenantId ?? tenants[0]?.id;
+  const activeTenantId = resolvedSearchParams.tenantId ?? tenants[0]?.id;
   const activeTenant = tenants.find((tenant) => tenant.id === activeTenantId);
 
   async function createTenant(formData: FormData) {
@@ -63,23 +63,23 @@ export default async function ClientsPage({
 
     const name = formData.get('name')?.toString();
     if (!name || name.trim().length < 2) {
-      redirect('/clients?error=name_required');
+      redirect('/spaces?error=name_required');
     }
 
     const formToken = formData.get('csrf_token')?.toString();
     const cookieToken = await getCsrfToken();
     if (!formToken || !cookieToken || !crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(formToken))) {
-      redirect('/clients?error=csrf');
+      redirect('/spaces?error=csrf');
     }
 
-    await prisma.$transaction(async (tx) => {
-      const created = await tx.tenant.create({
+    const created = await prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({
         data: { name: name.trim() }
       });
 
       await tx.tenantMembership.create({
         data: {
-          tenantId: created.id,
+          tenantId: tenant.id,
           userId: session.userId,
           role: 'viewer'
         }
@@ -87,22 +87,22 @@ export default async function ClientsPage({
 
       await tx.auditLog.create({
         data: {
-          tenantId: created.id,
+          tenantId: tenant.id,
           action: 'tenant.create',
           entityType: 'tenant',
-          entityId: created.id,
-          payload: { name: created.name, userId: session.userId }
+          entityId: tenant.id,
+          payload: { name: tenant.name, userId: session.userId }
         }
       });
 
+      return tenant;
     });
 
-    revalidatePath('/clients');
-    revalidatePath('/clients', 'layout');
+    revalidatePath('/spaces');
+    revalidatePath('/spaces', 'layout');
     revalidatePath('/home');
-    revalidatePath('/home', 'layout');
     revalidatePath('/posts');
-    return;
+    redirect(`/spaces/${created.id}/overview`);
   }
 
   async function deleteTenant(tenantId: string) {
@@ -157,10 +157,9 @@ export default async function ClientsPage({
       });
     });
 
-    revalidatePath('/clients');
-    revalidatePath('/clients', 'layout');
+    revalidatePath('/spaces');
+    revalidatePath('/spaces', 'layout');
     revalidatePath('/home');
-    revalidatePath('/home', 'layout');
     revalidatePath('/posts');
   }
 
@@ -193,38 +192,37 @@ export default async function ClientsPage({
       }
     });
 
-    revalidatePath('/clients');
-    revalidatePath('/clients', 'layout');
+    revalidatePath('/spaces');
+    revalidatePath('/spaces', 'layout');
     revalidatePath('/home');
-    revalidatePath('/home', 'layout');
     revalidatePath('/posts');
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Clients</p>
-        <h2 className="text-2xl font-semibold">Dossiers clients</h2>
+        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Gestion</p>
+        <h2 className="text-2xl font-semibold">Espaces</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Creez un dossier client puis ajoutez les reseaux associes.
+          Gerez vos espaces et leurs reseaux sociaux associes.
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Nouveau client</CardTitle>
+            <CardTitle>Nouvel espace</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {canCreateClients(currentUser.role) ? (
               <form action={createTenant} className="space-y-3">
                 <CsrfInput />
-                <Input name="name" placeholder="Nom du client" required />
+                <Input name="name" placeholder="Nom de l'espace" required />
                 <Button type="submit">Creer</Button>
               </form>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Vous n’avez pas l’autorisation de créer un client.
+                Vous n'avez pas l'autorisation de creer un espace.
               </p>
             )}
             <div className="space-y-2 text-sm">
@@ -235,8 +233,8 @@ export default async function ClientsPage({
                     tenant.id === activeTenantId ? 'bg-muted/70' : 'hover:bg-muted'
                   } ${!tenant.active ? 'opacity-60' : ''}`}
                 >
-                  <a
-                    href={`/clients?tenantId=${tenant.id}`}
+                  <Link
+                    href={`/spaces?tenantId=${tenant.id}`}
                     className="min-w-0 flex-1 truncate text-sm"
                   >
                     <span className="flex items-center gap-2">
@@ -247,7 +245,7 @@ export default async function ClientsPage({
                         </Badge>
                       )}
                     </span>
-                  </a>
+                  </Link>
                   {isAdmin && (
                     <div className="flex items-center gap-1">
                       <TenantToggleButton
@@ -266,7 +264,7 @@ export default async function ClientsPage({
                 </div>
               ))}
               {tenants.length === 0 && (
-                <p className="text-muted-foreground">Aucun client pour le moment.</p>
+                <p className="text-muted-foreground">Aucun espace pour le moment.</p>
               )}
             </div>
           </CardContent>
@@ -274,11 +272,19 @@ export default async function ClientsPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Reseaux du client</CardTitle>
+            <CardTitle>Reseaux de l'espace</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {activeTenant ? (
               <>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">{activeTenant.name}</h3>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/spaces/${activeTenant.id}/overview`}>
+                      Voir l'espace
+                    </Link>
+                  </Button>
+                </div>
                 <div className="grid gap-3">
                   {activeTenant.channels.map((channel) => (
                     <div key={channel.id} className="rounded-md border px-3 py-2 text-sm">
@@ -321,12 +327,12 @@ export default async function ClientsPage({
                   </form>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Les reseaux sont gerables par l’agence uniquement.
+                    Les reseaux sont gerables par l'agence uniquement.
                   </p>
                 )}
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">Selectionnez un client.</p>
+              <p className="text-sm text-muted-foreground">Selectionnez un espace.</p>
             )}
           </CardContent>
         </Card>
