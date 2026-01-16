@@ -3,8 +3,7 @@
 import type { JSONContent } from '@tiptap/react';
 import { EditorContent } from '@tiptap/react';
 import { DragHandle } from '@tiptap/extension-drag-handle-react';
-import { GripVertical, Save, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { GripVertical, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDocEditor } from './hooks/useDocEditor';
 import { EditorToolbar } from './editor-toolbar';
@@ -27,7 +26,6 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
     isSaving,
     isDirty,
     lastSaved,
-    handleSave,
     showLinkDialog,
     setShowLinkDialog,
     linkUrl,
@@ -56,28 +54,20 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
           className="max-w-md border-0 text-lg font-semibold focus-visible:ring-0"
           disabled={readOnly}
         />
-        <div className="flex items-center gap-3">
-          {!readOnly && (
-            <span className="text-xs text-muted-foreground">
-              {isSaving ? (
-                'Sauvegarde en cours...'
-              ) : isDirty ? (
-                'Sauvegarde automatique...'
-              ) : lastSaved ? (
-                <span className="flex items-center gap-1 text-green-600">
-                  <Check className="h-3 w-3" />
-                  Sauvegarde
-                </span>
-              ) : null}
-            </span>
-          )}
-          {!readOnly && (
-            <Button onClick={handleSave} disabled={isSaving || !isDirty} size="sm" variant="outline">
-              <Save className="mr-2 h-4 w-4" />
-              Sauvegarder
-            </Button>
-          )}
-        </div>
+        {!readOnly && (
+          <span className="text-xs text-muted-foreground">
+            {isSaving ? (
+              'Sauvegarde en cours...'
+            ) : isDirty ? (
+              'Sauvegarde automatique...'
+            ) : lastSaved ? (
+              <span className="flex items-center gap-1 text-green-600">
+                <Check className="h-3 w-3" />
+                Sauvegarde
+              </span>
+            ) : null}
+          </span>
+        )}
       </div>
 
       {/* Toolbar */}
