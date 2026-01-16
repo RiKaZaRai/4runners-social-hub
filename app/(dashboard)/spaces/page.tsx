@@ -279,11 +279,20 @@ export default async function SpacesPage({
               <>
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium">{activeTenant.name}</h3>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/spaces/${activeTenant.id}/overview`}>
-                      Voir l'espace
-                    </Link>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/spaces/${activeTenant.id}/overview`}>
+                        Voir l'espace
+                      </Link>
+                    </Button>
+                    {(isAdmin || isManager) && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/spaces/${activeTenant.id}/settings`}>
+                          Paramètres
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="grid gap-3">
                   {activeTenant.channels.map((channel) => (
