@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tippy.js/dist/tippy.css';
 
 @source "../components/**/*.{ts,tsx}";
 

@@ -79,7 +79,7 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
 
       {/* Editor */}
       <div className="flex-1 overflow-auto px-4 py-4">
-        {!readOnly && (
+        {!readOnly && editor && (
           <>
             <BubbleMenu editor={editor} onOpenLinkDialog={openLinkDialog} />
             <DragHandle editor={editor}>

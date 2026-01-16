@@ -16,7 +16,7 @@ import Image from '@tiptap/extension-image';
 import Youtube from '@tiptap/extension-youtube';
 import { Indent as IndentExtension } from '@/lib/tiptap/indent-extension';
 import { SlashCommand, slashCommandItems } from '@/lib/tiptap/slash-command';
-import { EmojiCommand, emojiItems, type EmojiItem } from '@/lib/tiptap/emoji-command';
+import { EmojiCommand, emojiItems } from '@/lib/tiptap/emoji-command';
 import { SlashCommandMenu, type SlashCommandMenuRef } from '../slash-command-menu';
 import { EmojiMenu, type EmojiMenuRef } from '../emoji-menu';
 import { common, createLowlight } from 'lowlight';
