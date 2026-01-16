@@ -1,23 +1,30 @@
 # 4runners-social-hub
 
-Monorepo simple pour l'agence social media (Next.js 14 App Router, Prisma, BullMQ, MinIO).
+Monorepo simple pour l'agence social media (Next.js 16 App Router, Prisma 7, BullMQ, MinIO).
+
+## Stack
+
+- **Node.js 24 / Next.js 16 + React 19** avec App Router et composants dédiés.
+- **Prisma 7** + PostgreSQL 18 (via `DATABASE_URL`) pour les données.
+- **Redis 8** et **BullMQ** pour les jobs/queues, couplés à MinIO (AWS SDK S3).
+- **Tailwind CSS 3** compilé au build (PostCSS + config `tailwind.config.ts` + `app/globals.css`).
 
 ## Demarrage rapide
 
 ```bash
-pnpm install
+npm install
 cp .env.example .env
 
 docker compose up -d
-pnpm prisma migrate dev
-pnpm prisma:seed
-pnpm dev
+npm run prisma:migrate
+npm run prisma:seed
+npm run dev
 ```
 
 Dans un autre terminal pour les jobs:
 
 ```bash
-pnpm worker
+npm run worker
 ```
 
 ## Comptes dev
@@ -33,10 +40,10 @@ pnpm worker
 
 ## Scripts utiles
 
-- `pnpm prisma:migrate`
-- `pnpm prisma:seed`
-- `pnpm worker`
-- `pnpm test`
+- `npm run prisma:migrate`
+- `npm run prisma:seed`
+- `npm run worker`
+- `npm run test`
 
 ## Notes V1
 
@@ -49,7 +56,7 @@ pnpm worker
 
 - Utiliser `docker-compose.prod.yml` pour un stack tout-in-one.
 - Configurer le service `app` avec le domaine `octopus.digital-jungle.fr`.
-- Lancer apres deploy: `pnpm prisma:seed` une seule fois (les migrations sont lancees au boot de `app`).
+- Lancer apres deploy: `npm run prisma:seed` une seule fois (les migrations sont lancees au boot de `app`).
 
 Generer des secrets (recommande):
 
