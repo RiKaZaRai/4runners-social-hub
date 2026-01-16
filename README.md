@@ -6,6 +6,7 @@ Monorepo simple pour l'agence social media (Next.js 16 App Router, Prisma 7, Bul
 
 - **Node.js 24 / Next.js 16 + React 19** avec App Router et composants dédiés.
 - **Prisma 7** + PostgreSQL 18 (via `DATABASE_URL`) pour les données.
+- Prisma 7 utilise désormais `prisma.config.ts` pour charger `DATABASE_URL`, donc pensez à définir cette variable avant les commandes `prisma`.
 - **Redis 8** et **BullMQ** pour les jobs/queues, couplés à MinIO (AWS SDK S3).
 - **Tailwind CSS 3** compilé au build (PostCSS + config `tailwind.config.ts` + `app/globals.css`).
 
