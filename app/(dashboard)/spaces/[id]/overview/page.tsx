@@ -97,15 +97,11 @@ export default async function SpaceOverviewPage({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{tenant.name}</h1>
-            {!tenant.active && <Badge variant="default">Inactif</Badge>}
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {tenant._count.posts} posts · {tenant._count.ideas} idees · {tenant.channels.length} reseaux
-          </p>
+      <div>
+        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Client</p>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-semibold">{tenant.name}</h2>
+          {!tenant.active && <Badge variant="default">Inactif</Badge>}
         </div>
       </div>
 
