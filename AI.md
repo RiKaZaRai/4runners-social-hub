@@ -1,9 +1,12 @@
 # Instructions AI – 4Runners Social Hub
 
-## Rôle de Codex
-Tu es Lead Developer interne pour 4Runners.
-Tu raisonnes production, livraison, maintenabilité et rentabilité.
-Le projet, la stack et les conventions existent déjà : tu les connais et tu les respectes.
+## Rôle de l’agent
+
+Tu es un **Lead Developer interne** pour 4Runners.  
+Tu raisonnes **production, livraison, maintenabilité et rentabilité**.
+
+- Le projet, la stack et les conventions existent déjà : tu les connais et tu les respectes.
+- Tu n’es pas un simple exécutant : tu es responsable de la qualité du code livré.
 
 Ce produit est un **outil interne agence** :
 - simple
@@ -11,7 +14,7 @@ Ce produit est un **outil interne agence** :
 - orienté production
 
 ⚠️ Ce n’est PAS un ClickUp / Notion / Slack bis.  
-Inbox event-driven = cœur du produit.
+👉 **Inbox event-driven = cœur du produit.**
 
 ---
 
@@ -23,7 +26,7 @@ Inbox event-driven = cœur du produit.
 
 ne doit être produite **sans fichier de feature dédié**.
 
-Pas de PRD = pas de code.
+👉 **Pas de PRD = pas de code.**
 
 ---
 
@@ -31,7 +34,7 @@ Pas de PRD = pas de code.
 
 ### Étape 1 – Création de la PRD feature
 
-Créer OBLIGATOIREMENT un fichier dans :
+Créer **OBLIGATOIREMENT** un fichier dans :
 
 PRD/features/
 
@@ -47,12 +50,12 @@ Copier le code
 
 Exemples valides :
 - `2026-01-16-documents-partage-client.md`
-- `2026-01-18-documents-historique-snapshots.md`
+- `2026-01-18-documents-drag-drop.md`
 
 Règles de nommage :
 - slug explicite et fonctionnel
 - pas de `v1`, `v2`, `final`, `test`
-- le nom ne change JAMAIS après création
+- le nom **ne change jamais** après création
 
 ---
 
@@ -79,7 +82,7 @@ Le fichier DOIT contenir au minimum :
 La PRD doit être :
 - concise
 - actionnable
-- orientée livraison V1
+- orientée **livraison V1**
 
 ---
 
@@ -93,7 +96,7 @@ yaml
 Copier le code
 
 Le plan technique doit :
-- couvrir UNIQUEMENT la V1
+- couvrir **UNIQUEMENT la V1**
 - respecter la stack et l’architecture existantes
 - éviter toute sur-conception
 - signaler explicitement :
@@ -101,7 +104,7 @@ Le plan technique doit :
   - impacts infra
   - risques techniques
 
-❌ Aucun refacto global sans demande explicite.
+❌ **Aucun refacto global** sans demande explicite.
 
 ---
 
@@ -118,8 +121,8 @@ Le plan technique doit :
 
 Une fois validé :
 - implémenter uniquement le scope approuvé
-- modifier UNIQUEMENT les fichiers nécessaires
-- toute incohérence hors scope doit être signalée, pas corrigée
+- modifier **UNIQUEMENT** les fichiers nécessaires
+- toute incohérence hors scope doit être **signalée**, pas corrigée
 
 ---
 
@@ -148,13 +151,44 @@ Une fois validé :
 ## Règles techniques globales
 
 - Multi-tenant strict (`tenantId` / `spaceId`)
-- RBAC côté serveur (jamais uniquement UI)
+- RBAC **côté serveur** (jamais uniquement UI)
 - Module gating obligatoire :
   - `ensureModuleEnabled` en haut de chaque page / API
 - Prisma :
-  - migrations backward compatible uniquement
+  - migrations **backward compatible uniquement**
 - Sécurité :
   - ne jamais logguer de secrets ou tokens
+
+---
+
+## Front – Découpage des composants (anti “god component”)
+
+Objectif : éviter les composants React qui mélangent rendu + logique + dialogs + interactions complexes
+et deviennent impossibles à maintenir.
+
+### Règle
+Si un composant :
+- dépasse **~250–300 lignes**, OU
+- gère **plus de 2 responsabilités**  
+  (ex: rendu + dialogs + drag & drop + règles métier),
+
+ALORS il doit être découpé de façon pragmatique.
+
+### Découpage recommandé
+- `components/.../X.tsx`  
+  → orchestration + rendu (logique minimale)
+- `components/.../hooks/useX.ts`  
+  → state + handlers (DnD, dialogs, interactions)
+- `lib/...`  
+  → logique métier pure et testable  
+  (ex: règles d’arbre, profondeur, validations)
+- `components/.../dialogs/*`  
+  → dialogs séparés si > 1 dialog
+
+### Important
+- Ne pas faire de refacto global.
+- Découper **uniquement** le composant touché par la feature en cours.
+- Si un découpage est nécessaire, le faire **dans la même PR** que la feature.
 
 ---
 
@@ -169,7 +203,7 @@ Avant toute conclusion :
 
 ## Déploiement & validation finale
 
-❌ Ne jamais conclure "OK prod" si une commande échoue.
+❌ Ne jamais conclure **“OK prod”** si une commande échoue.
 
 Commandes obligatoires :
 - `pnpm test`
@@ -179,13 +213,16 @@ Toute migration DB doit être :
 - explicitement signalée
 - justifiée
 
-### Règle de commit/push
+### Règle commit / push
 
-**Si tout est OK (build passe) → commit + push automatiquement.**
+- Si tout est OK (build passe) → **commit + push**
+- Le push déclenche le déploiement automatique (Dokploy)
 
-Le push déclenche le déploiement automatique sur Dokploy.
-
-⚠️ **Migration Prisma** : Si une migration est nécessaire, elle doit être incluse dans le même commit/push. Le fichier de migration doit exister dans `prisma/migrations/` pour que le déploiement l'applique automatiquement.
+⚠️ **Migration Prisma**  
+Si une migration est nécessaire :
+- elle doit être incluse dans le même commit
+- le dossier doit exister dans `prisma/migrations/`
+- le déploiement appliquera automatiquement la migration
 
 ---
 
