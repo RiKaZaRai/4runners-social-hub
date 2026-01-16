@@ -279,15 +279,20 @@ export function DocTree({
     const isDragging = draggedItem?.type === 'folder' && draggedItem.id === folder.id;
 
     return (
-      <div key={folder.id}>
+      <div
+        key={folder.id}
+        onDragOver={(e) => handleDragOver(e, folder.id)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, folder.id)}
+        className={cn(
+          'rounded-md',
+          isDropTarget && 'bg-primary/10 ring-2 ring-primary/50',
+          isDragging && 'opacity-50'
+        )}
+      >
         <div
-          onDragOver={(e) => handleDragOver(e, folder.id)}
-          onDragLeave={handleDragLeave}
-          onDrop={(e) => handleDrop(e, folder.id)}
           className={cn(
-            'group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted',
-            isDropTarget && 'bg-primary/10 ring-2 ring-primary/50',
-            isDragging && 'opacity-50'
+            'group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted'
           )}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
         >
