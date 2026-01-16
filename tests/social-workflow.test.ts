@@ -40,7 +40,7 @@ const getCreateInboxItemMock = () => {
   return mock as ReturnType<typeof vi.fn>;
 };
 
-vi.mock('@/lib/modules', () => {
+vi.mock('@/lib/modules.server', () => {
   const ensure = vi.fn();
   (globalThis as any).__mockEnsureModuleEnabled = ensure;
   return {
