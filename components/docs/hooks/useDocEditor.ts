@@ -16,7 +16,9 @@ import Image from '@tiptap/extension-image';
 import Youtube from '@tiptap/extension-youtube';
 import { Indent as IndentExtension } from '@/lib/tiptap/indent-extension';
 import { SlashCommand, slashCommandItems } from '@/lib/tiptap/slash-command';
+import { EmojiCommand, emojiItems, type EmojiItem } from '@/lib/tiptap/emoji-command';
 import { SlashCommandMenu, type SlashCommandMenuRef } from '../slash-command-menu';
+import { EmojiMenu, type EmojiMenuRef } from '../emoji-menu';
 import { common, createLowlight } from 'lowlight';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 
@@ -96,6 +98,65 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
             return {
               onStart: (props: any) => {
                 component = new ReactRenderer(SlashCommandMenu, {
+                  props,
+                  editor: props.editor
+                });
+
+                if (!props.clientRect) return;
+
+                popup = tippy('body', {
+                  getReferenceClientRect: props.clientRect,
+                  appendTo: () => document.body,
+                  content: component.element,
+                  showOnCreate: true,
+                  interactive: true,
+                  trigger: 'manual',
+                  placement: 'bottom-start'
+                });
+              },
+              onUpdate: (props: any) => {
+                component?.updateProps(props);
+
+                if (!props.clientRect) return;
+
+                popup?.[0]?.setProps({
+                  getReferenceClientRect: props.clientRect
+                });
+              },
+              onKeyDown: (props: any) => {
+                if (props.event.key === 'Escape') {
+                  popup?.[0]?.hide();
+                  return true;
+                }
+                return component?.ref?.onKeyDown(props) ?? false;
+              },
+              onExit: () => {
+                popup?.[0]?.destroy();
+                component?.destroy();
+              }
+            };
+          }
+        }
+      }),
+      EmojiCommand.configure({
+        suggestion: {
+          char: ':',
+          items: ({ query }: { query: string }) => {
+            if (!query) return emojiItems.slice(0, 40);
+            const lowerQuery = query.toLowerCase();
+            return emojiItems.filter(
+              (item) =>
+                item.name.toLowerCase().includes(lowerQuery) ||
+                item.keywords.some((k) => k.toLowerCase().includes(lowerQuery))
+            ).slice(0, 40);
+          },
+          render: () => {
+            let component: ReactRenderer<EmojiMenuRef> | null = null;
+            let popup: TippyInstance[] | null = null;
+
+            return {
+              onStart: (props: any) => {
+                component = new ReactRenderer(EmojiMenu, {
                   props,
                   editor: props.editor
                 });

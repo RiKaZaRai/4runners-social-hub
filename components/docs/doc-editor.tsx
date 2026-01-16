@@ -2,11 +2,13 @@
 
 import type { JSONContent } from '@tiptap/react';
 import { EditorContent } from '@tiptap/react';
-import { Save } from 'lucide-react';
+import { DragHandle } from '@tiptap/extension-drag-handle-react';
+import { GripVertical, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDocEditor } from './hooks/useDocEditor';
 import { EditorToolbar } from './editor-toolbar';
+import { BubbleMenu } from './bubble-menu';
 import { LinkDialog } from './dialogs/link-dialog';
 import { ImageDialog } from './dialogs/image-dialog';
 
@@ -77,6 +79,16 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
 
       {/* Editor */}
       <div className="flex-1 overflow-auto px-4 py-4">
+        {!readOnly && (
+          <>
+            <BubbleMenu editor={editor} onOpenLinkDialog={openLinkDialog} />
+            <DragHandle editor={editor}>
+              <div className="flex h-6 w-6 cursor-grab items-center justify-center rounded hover:bg-muted active:cursor-grabbing">
+                <GripVertical className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </DragHandle>
+          </>
+        )}
         <EditorContent
           editor={editor}
           className="prose prose-sm max-w-none dark:prose-invert focus:outline-none"
