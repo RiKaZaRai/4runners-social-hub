@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { isAgencyAdmin, isAgencyManager } from '@/lib/roles';
 
-export default async function AdminTenantPage({ params }: { params: { tenantId: string } }) {
+export default async function AdminTenantPage({ params }: { params: Promise<{ tenantId: string }> }) {
+  const { tenantId } = await params;
   const session = await requireSession();
 
   const user = await prisma.user.findUnique({
@@ -16,7 +17,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
   });
 
   const membership = await prisma.tenantMembership.findFirst({
-    where: { tenantId: params.tenantId, userId: session.userId }
+    where: { tenantId, userId: session.userId }
   });
 
   const isAdmin = isAgencyAdmin(user?.role);
@@ -28,7 +29,7 @@ export default async function AdminTenantPage({ params }: { params: { tenantId: 
 
   // Get tenant with detailed information
   const tenant = await prisma.tenant.findUnique({
-    where: { id: params.tenantId },
+    where: { id: tenantId },
     include: {
       memberships: {
         include: {

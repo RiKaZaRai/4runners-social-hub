@@ -13,11 +13,12 @@ export default async function PostDetailPage({
   params,
   searchParams
 }: {
-  params: { id: string };
-  searchParams: { tenantId?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tenantId?: string }>;
 }) {
+  const { id: postId } = await params;
+  const { tenantId } = await searchParams;
   const session = await requireSession();
-  const tenantId = searchParams.tenantId;
   if (!tenantId) redirect('/spaces');
 
   const currentUser = await prisma.user.findUnique({
@@ -40,7 +41,7 @@ export default async function PostDetailPage({
   }
 
   const post = await prisma.post.findFirst({
-    where: { id: params.id, tenantId },
+    where: { id: postId, tenantId },
     include: { checklist: true, comments: true, assets: true }
   });
 

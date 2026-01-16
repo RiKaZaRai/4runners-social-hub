@@ -20,7 +20,8 @@ const SOCIAL_NETWORKS = [
   { value: 'google_my_business', label: 'Google My Business', icon: '🏢' }
 ] as const;
 
-export default async function TenantChannelsPage({ params }: { params: { tenantId: string } }) {
+export default async function TenantChannelsPage({ params }: { params: Promise<{ tenantId: string }> }) {
+  const { tenantId } = await params;
   const session = await requireSession();
 
   const user = await prisma.user.findUnique({
@@ -36,7 +37,7 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
   const isManager = isAgencyManager(user.role);
   const membership = isManager
     ? await prisma.tenantMembership.findUnique({
-        where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
+        where: { tenantId_userId: { tenantId, userId: session.userId } }
       })
     : null;
 
@@ -46,7 +47,7 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
 
   // Get tenant with channels
   const tenant = await prisma.tenant.findUnique({
-    where: { id: params.tenantId },
+    where: { id: tenantId },
     include: {
       channels: {
         orderBy: { createdAt: 'desc' }
@@ -66,40 +67,42 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
   async function addChannel(formData: FormData) {
     'use server';
 
+    const tid = formData.get('tenantId') as string;
     const network = formData.get('network') as string;
     const handle = formData.get('handle') as string;
     const url = formData.get('url') as string;
 
     if (!network) {
-      redirect(`/admin/${params.tenantId}/channels?error=network_required`);
+      redirect(`/admin/${tid}/channels?error=network_required`);
     }
 
     try {
       await prisma.tenantChannel.create({
         data: {
-          tenantId: params.tenantId,
+          tenantId: tid,
           network: network as any,
           handle: handle || null,
           url: url || null
         }
       });
 
-      redirect(`/admin/${params.tenantId}/channels`);
+      redirect(`/admin/${tid}/channels`);
     } catch (error) {
       console.error('Error adding channel:', error);
-      redirect(`/admin/${params.tenantId}/channels?error=add_failed`);
+      redirect(`/admin/${tid}/channels?error=add_failed`);
     }
   }
 
   async function updateChannel(formData: FormData) {
     'use server';
 
+    const tid = formData.get('tenantId') as string;
     const channelId = formData.get('channelId') as string;
     const handle = formData.get('handle') as string;
     const url = formData.get('url') as string;
 
     if (!channelId) {
-      redirect(`/admin/${params.tenantId}/channels?error=channel_id_required`);
+      redirect(`/admin/${tid}/channels?error=channel_id_required`);
     }
 
     try {
@@ -111,20 +114,21 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
         }
       });
 
-      redirect(`/admin/${params.tenantId}/channels`);
+      redirect(`/admin/${tid}/channels`);
     } catch (error) {
       console.error('Error updating channel:', error);
-      redirect(`/admin/${params.tenantId}/channels?error=update_failed`);
+      redirect(`/admin/${tid}/channels?error=update_failed`);
     }
   }
 
   async function deleteChannel(formData: FormData) {
     'use server';
 
+    const tid = formData.get('tenantId') as string;
     const channelId = formData.get('channelId') as string;
 
     if (!channelId) {
-      redirect(`/admin/${params.tenantId}/channels?error=channel_id_required`);
+      redirect(`/admin/${tid}/channels?error=channel_id_required`);
     }
 
     try {
@@ -132,10 +136,10 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
         where: { id: channelId }
       });
 
-      redirect(`/admin/${params.tenantId}/channels`);
+      redirect(`/admin/${tid}/channels`);
     } catch (error) {
       console.error('Error deleting channel:', error);
-      redirect(`/admin/${params.tenantId}/channels?error=delete_failed`);
+      redirect(`/admin/${tid}/channels?error=delete_failed`);
     }
   }
 
@@ -144,7 +148,7 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
       <div className="mx-auto max-w-4xl space-y-6">
         <div>
           <Link
-            href={`/admin/${params.tenantId}`}
+            href={`/admin/${tenantId}`}
             className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             ← Retour au client
@@ -166,6 +170,7 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
             </CardHeader>
             <CardContent>
               <form action={addChannel} className="space-y-4">
+                <input type="hidden" name="tenantId" value={tenantId} />
                 <div className="space-y-2">
                   <Label htmlFor="network">Réseau social</Label>
                   <select
@@ -236,6 +241,7 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
                             <Badge variant="outline">{channel.network}</Badge>
                           </div>
                           <form action={deleteChannel}>
+                            <input type="hidden" name="tenantId" value={tenantId} />
                             <input type="hidden" name="channelId" value={channel.id} />
                             <Button type="submit" variant="destructive" size="sm">
                               Supprimer
@@ -245,6 +251,7 @@ export default async function TenantChannelsPage({ params }: { params: { tenantI
                       </CardHeader>
                       <CardContent>
                         <form action={updateChannel} className="space-y-4">
+                          <input type="hidden" name="tenantId" value={tenantId} />
                           <input type="hidden" name="channelId" value={channel.id} />
 
                           <div className="space-y-2">

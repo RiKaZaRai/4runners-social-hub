@@ -19,8 +19,9 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function SocialPostPage({
   params
 }: {
-  params: { id: string; postId: string };
+  params: Promise<{ id: string; postId: string }>;
 }) {
+  const { id: spaceId, postId } = await params;
   const session = await requireSession();
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
@@ -32,7 +33,7 @@ export default async function SocialPostPage({
   }
 
   const tenant = await prisma.tenant.findUnique({
-    where: { id: params.id },
+    where: { id: spaceId },
     select: { name: true, active: true, modules: true }
   });
 
@@ -49,27 +50,27 @@ export default async function SocialPostPage({
   }
 
   const membership = await prisma.tenantMembership.findUnique({
-    where: { tenantId_userId: { tenantId: params.id, userId: session.userId } }
+    where: { tenantId_userId: { tenantId: spaceId, userId: session.userId } }
   });
 
   if (!isAgency && !membership) {
     redirect('/spaces');
   }
 
-  const moduleEnabled = await hasModule(params.id, 'social');
+  const moduleEnabled = await hasModule(spaceId, 'social');
   if (!moduleEnabled) {
-    redirect(`/spaces/${params.id}/overview`);
+    redirect(`/spaces/${spaceId}/overview`);
   }
 
   const post = await prisma.post.findFirst({
-    where: { id: params.postId, tenantId: params.id },
+    where: { id: postId, tenantId: spaceId },
     include: {
       comments: { orderBy: { createdAt: 'desc' } }
     }
   });
 
   if (!post) {
-    redirect(`/spaces/${params.id}/social`);
+    redirect(`/spaces/${spaceId}/social`);
   }
 
   const isClient = isClientRole(role);
@@ -81,7 +82,7 @@ export default async function SocialPostPage({
         <div className="flex items-center gap-3">
           <Link
             className="text-sm text-muted-foreground underline-offset-4 hover:underline"
-            href={`/spaces/${params.id}/social`}
+            href={`/spaces/${spaceId}/social`}
           >
             ← Retour à la liste
           </Link>
@@ -93,7 +94,7 @@ export default async function SocialPostPage({
       <section className="space-y-4">
         <p className="text-sm text-muted-foreground line-clamp-4">{post.body}</p>
         <SocialPostActions
-          spaceId={params.id}
+          spaceId={spaceId}
           postId={post.id}
           status={post.status}
           isAgency={isAgency}

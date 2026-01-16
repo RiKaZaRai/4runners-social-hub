@@ -8,8 +8,9 @@ import { AVAILABLE_SPACE_MODULES, getSpaceModules, SpaceModuleName } from '@/lib
 export default async function SpaceSettingsPage({
   params
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id: spaceId } = await params;
   const session = await requireSession();
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
@@ -28,7 +29,7 @@ export default async function SpaceSettingsPage({
   }
 
   const tenant = await prisma.tenant.findUnique({
-    where: { id: params.id },
+    where: { id: spaceId },
     select: {
       modules: true,
       socialSettings: true
@@ -39,7 +40,7 @@ export default async function SpaceSettingsPage({
     redirect('/spaces');
   }
 
-  const modulesList = await getSpaceModules(params.id);
+  const modulesList = await getSpaceModules(spaceId);
   const socialSettingsRaw = tenant.socialSettings as SocialSettings | null;
   const socialSettings: SocialSettings = {
     instagram_handle: socialSettingsRaw?.instagram_handle ?? null,
@@ -67,7 +68,7 @@ export default async function SpaceSettingsPage({
       </div>
 
       <SpaceSettingsPanel
-        spaceId={params.id}
+        spaceId={spaceId}
         modules={moduleState}
         socialSettings={socialSettings}
         canManageModules={isAdmin || isManager}

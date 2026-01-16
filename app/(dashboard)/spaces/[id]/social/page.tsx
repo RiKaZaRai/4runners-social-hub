@@ -21,8 +21,9 @@ const STATUS_BADGE: Record<string, StatusLabel> = {
 export default async function SocialSpacePage({
   params
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id: spaceId } = await params;
   const session = await requireSession();
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
@@ -34,7 +35,7 @@ export default async function SocialSpacePage({
   }
 
   const tenant = await prisma.tenant.findUnique({
-    where: { id: params.id },
+    where: { id: spaceId },
     select: { name: true, active: true, modules: true }
   });
 
@@ -51,22 +52,22 @@ export default async function SocialSpacePage({
   }
 
   const membership = await prisma.tenantMembership.findUnique({
-    where: { tenantId_userId: { tenantId: params.id, userId: session.userId } }
+    where: { tenantId_userId: { tenantId: spaceId, userId: session.userId } }
   });
 
   if (!isAgency && !membership) {
     redirect('/spaces');
   }
 
-  const moduleEnabled = await hasModule(params.id, 'social');
+  const moduleEnabled = await hasModule(spaceId, 'social');
   if (!moduleEnabled) {
-    redirect(`/spaces/${params.id}/overview`);
+    redirect(`/spaces/${spaceId}/overview`);
   }
 
   const [pendingPosts, approvedPosts] = await Promise.all([
     prisma.post.findMany({
       where: {
-        tenantId: params.id,
+        tenantId: spaceId,
         status: { in: ['pending_client', 'changes_requested'] }
       },
       orderBy: { updatedAt: 'desc' },
@@ -74,7 +75,7 @@ export default async function SocialSpacePage({
     }),
     prisma.post.findMany({
       where: {
-        tenantId: params.id,
+        tenantId: spaceId,
         status: 'approved'
       },
       orderBy: { updatedAt: 'desc' },
@@ -109,7 +110,7 @@ export default async function SocialSpacePage({
               return (
                 <Link
                   key={post.id}
-                  href={`/spaces/${params.id}/social/posts/${post.id}`}
+                  href={`/spaces/${spaceId}/social/posts/${post.id}`}
                   className="flex flex-col gap-1 rounded-md border border-border px-4 py-3 hover:border-primary hover:bg-muted"
                 >
                   <div className="flex items-center justify-between">
@@ -134,7 +135,7 @@ export default async function SocialSpacePage({
             {approvedPosts.map((post) => (
               <Link
                 key={post.id}
-                href={`/spaces/${params.id}/social/posts/${post.id}`}
+                href={`/spaces/${spaceId}/social/posts/${post.id}`}
                 className="flex flex-col gap-1 rounded-md border border-border px-4 py-3 hover:border-primary hover:bg-muted"
               >
                 <div className="flex items-center justify-between">

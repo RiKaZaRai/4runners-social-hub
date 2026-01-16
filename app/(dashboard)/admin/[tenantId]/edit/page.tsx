@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default async function EditTenantPage({ params }: { params: { tenantId: string } }) {
+export default async function EditTenantPage({ params }: { params: Promise<{ tenantId: string }> }) {
+  const { tenantId } = await params;
   const session = await requireSession();
 
   // Verify user is agency_admin
@@ -22,7 +23,7 @@ export default async function EditTenantPage({ params }: { params: { tenantId: s
 
   // Get tenant
   const tenant = await prisma.tenant.findUnique({
-    where: { id: params.tenantId }
+    where: { id: tenantId }
   });
 
   if (!tenant) {
@@ -32,37 +33,40 @@ export default async function EditTenantPage({ params }: { params: { tenantId: s
   async function updateTenant(formData: FormData) {
     'use server';
 
+    const id = formData.get('tenantId') as string;
     const name = formData.get('name') as string;
 
     if (!name || name.trim() === '') {
-      redirect(`/admin/${params.tenantId}/edit?error=name_required`);
+      redirect(`/admin/${id}/edit?error=name_required`);
     }
 
     try {
       await prisma.tenant.update({
-        where: { id: params.tenantId },
+        where: { id },
         data: { name: name.trim() }
       });
 
-      redirect(`/admin/${params.tenantId}`);
+      redirect(`/admin/${id}`);
     } catch (error) {
       console.error('Error updating tenant:', error);
-      redirect(`/admin/${params.tenantId}/edit?error=update_failed`);
+      redirect(`/admin/${id}/edit?error=update_failed`);
     }
   }
 
-  async function deleteTenant() {
+  async function deleteTenant(formData: FormData) {
     'use server';
+
+    const id = formData.get('tenantId') as string;
 
     try {
       await prisma.tenant.delete({
-        where: { id: params.tenantId }
+        where: { id }
       });
 
       redirect('/spaces');
     } catch (error) {
       console.error('Error deleting tenant:', error);
-      redirect(`/admin/${params.tenantId}/edit?error=delete_failed`);
+      redirect(`/admin/${id}/edit?error=delete_failed`);
     }
   }
 
@@ -71,7 +75,7 @@ export default async function EditTenantPage({ params }: { params: { tenantId: s
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
           <Link
-            href={`/admin/${params.tenantId}`}
+            href={`/admin/${tenantId}`}
             className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             ← Retour au client
@@ -91,6 +95,7 @@ export default async function EditTenantPage({ params }: { params: { tenantId: s
           </CardHeader>
           <CardContent>
             <form action={updateTenant} className="space-y-4">
+              <input type="hidden" name="tenantId" value={tenantId} />
               <div className="space-y-2">
                 <Label htmlFor="name">Nom du client</Label>
                 <Input
@@ -108,7 +113,7 @@ export default async function EditTenantPage({ params }: { params: { tenantId: s
                   Enregistrer
                 </Button>
                 <Button type="button" variant="outline" asChild>
-                  <Link href={`/admin/${params.tenantId}`}>Annuler</Link>
+                  <Link href={`/admin/${tenantId}`}>Annuler</Link>
                 </Button>
               </div>
             </form>
@@ -124,6 +129,7 @@ export default async function EditTenantPage({ params }: { params: { tenantId: s
           </CardHeader>
           <CardContent>
             <form action={deleteTenant}>
+              <input type="hidden" name="tenantId" value={tenantId} />
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Supprimer ce client</p>

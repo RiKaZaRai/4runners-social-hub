@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
-export default async function TenantMembersPage({ params }: { params: { tenantId: string } }) {
+export default async function TenantMembersPage({ params }: { params: Promise<{ tenantId: string }> }) {
+  const { tenantId } = await params;
   const session = await requireSession();
 
   const currentUser = await prisma.user.findUnique({
@@ -29,7 +30,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
   const isManager = isAgencyManager(currentUser.role);
   const managerMembership = isManager
     ? await prisma.tenantMembership.findUnique({
-        where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
+        where: { tenantId_userId: { tenantId, userId: session.userId } }
       })
     : null;
 
@@ -38,7 +39,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
   }
 
   const tenant = await prisma.tenant.findUnique({
-    where: { id: params.tenantId },
+    where: { id: tenantId },
     include: {
       memberships: {
         include: {
@@ -84,6 +85,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
   async function addMember(formData: FormData) {
     'use server';
 
+    const tid = formData.get('tenantId') as string;
     const session = await requireSession();
     const actor = await prisma.user.findUnique({
       where: { id: session.userId },
@@ -100,7 +102,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     if (!actorIsAdmin) {
       if (!actorIsManager) redirect('/spaces');
       const membership = await prisma.tenantMembership.findUnique({
-        where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
+        where: { tenantId_userId: { tenantId: tid, userId: session.userId } }
       });
       if (!membership) redirect('/spaces');
     }
@@ -109,28 +111,29 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     const role = formData.get('role') as 'viewer' | 'client_admin';
 
     if (!userId || !role) {
-      redirect(`/admin/${params.tenantId}/members?error=missing_fields`);
+      redirect(`/admin/${tid}/members?error=missing_fields`);
     }
 
     try {
       await prisma.tenantMembership.create({
         data: {
-          tenantId: params.tenantId,
+          tenantId: tid,
           userId,
           role
         }
       });
 
-      redirect(`/admin/${params.tenantId}/members`);
+      redirect(`/admin/${tid}/members`);
     } catch (error) {
       console.error('Error adding member:', error);
-      redirect(`/admin/${params.tenantId}/members?error=add_failed`);
+      redirect(`/admin/${tid}/members?error=add_failed`);
     }
   }
 
   async function removeMember(formData: FormData) {
     'use server';
 
+    const tid = formData.get('tenantId') as string;
     const session = await requireSession();
     const actor = await prisma.user.findUnique({
       where: { id: session.userId },
@@ -144,7 +147,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     const membershipId = formData.get('membershipId') as string;
 
     if (!membershipId) {
-      redirect(`/admin/${params.tenantId}/members?error=missing_id`);
+      redirect(`/admin/${tid}/members?error=missing_id`);
     }
 
     try {
@@ -153,28 +156,29 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
         select: { userId: true, tenantId: true }
       });
 
-      if (!membership || membership.tenantId !== params.tenantId) {
-        redirect(`/admin/${params.tenantId}/members?error=not_found`);
+      if (!membership || membership.tenantId !== tid) {
+        redirect(`/admin/${tid}/members?error=not_found`);
       }
 
       if (membership.userId === session.userId) {
-        redirect(`/admin/${params.tenantId}/members?error=cannot_remove_self`);
+        redirect(`/admin/${tid}/members?error=cannot_remove_self`);
       }
 
       await prisma.tenantMembership.delete({
         where: { id: membershipId }
       });
 
-      redirect(`/admin/${params.tenantId}/members`);
+      redirect(`/admin/${tid}/members`);
     } catch (error) {
       console.error('Error removing member:', error);
-      redirect(`/admin/${params.tenantId}/members?error=remove_failed`);
+      redirect(`/admin/${tid}/members?error=remove_failed`);
     }
   }
 
   async function updateMemberRole(formData: FormData) {
     'use server';
 
+    const tid = formData.get('tenantId') as string;
     const session = await requireSession();
     const actor = await prisma.user.findUnique({
       where: { id: session.userId },
@@ -191,7 +195,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     if (!actorIsAdmin) {
       if (!actorIsManager) redirect('/spaces');
       const membership = await prisma.tenantMembership.findUnique({
-        where: { tenantId_userId: { tenantId: params.tenantId, userId: session.userId } }
+        where: { tenantId_userId: { tenantId: tid, userId: session.userId } }
       });
       if (!membership) redirect('/spaces');
     }
@@ -200,7 +204,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
     const role = formData.get('role') as 'viewer' | 'client_admin';
 
     if (!membershipId || !role) {
-      redirect(`/admin/${params.tenantId}/members?error=missing_fields`);
+      redirect(`/admin/${tid}/members?error=missing_fields`);
     }
 
     try {
@@ -209,8 +213,8 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
         select: { tenantId: true }
       });
 
-      if (!membership || membership.tenantId !== params.tenantId) {
-        redirect(`/admin/${params.tenantId}/members?error=not_found`);
+      if (!membership || membership.tenantId !== tid) {
+        redirect(`/admin/${tid}/members?error=not_found`);
       }
 
       await prisma.tenantMembership.update({
@@ -218,10 +222,10 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
         data: { role }
       });
 
-      redirect(`/admin/${params.tenantId}/members`);
+      redirect(`/admin/${tid}/members`);
     } catch (error) {
       console.error('Error updating member role:', error);
-      redirect(`/admin/${params.tenantId}/members?error=update_failed`);
+      redirect(`/admin/${tid}/members?error=update_failed`);
     }
   }
 
@@ -230,7 +234,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
       <div className="mx-auto max-w-4xl space-y-6">
         <div>
           <Link
-            href={`/admin/${params.tenantId}`}
+            href={`/admin/${tenantId}`}
             className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             ← Retour au client
@@ -249,6 +253,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
             </CardHeader>
             <CardContent>
               <form action={addMember} className="space-y-4">
+                <input type="hidden" name="tenantId" value={tenantId} />
                 <div className="space-y-2">
                   <Label htmlFor="userId">Utilisateur</Label>
                   <select
@@ -329,6 +334,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
 
                     <div className="flex gap-2">
                       <form action={updateMemberRole}>
+                        <input type="hidden" name="tenantId" value={tenantId} />
                         <input type="hidden" name="membershipId" value={membership.id} />
                         <input
                           type="hidden"
@@ -341,6 +347,7 @@ export default async function TenantMembersPage({ params }: { params: { tenantId
                       </form>
 
                       <form action={removeMember}>
+                        <input type="hidden" name="tenantId" value={tenantId} />
                         <input type="hidden" name="membershipId" value={membership.id} />
                         <Button type="submit" variant="destructive" size="sm">
                           Retirer
