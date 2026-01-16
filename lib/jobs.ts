@@ -1,5 +1,4 @@
 import { Queue } from 'bullmq';
-import { redis } from '@/lib/redis';
 
 let publishQueue: Queue | null = null;
 let deleteRemoteQueue: Queue | null = null;
@@ -9,23 +8,27 @@ function shouldSkipRedis() {
   return process.env.NEXT_PHASE === 'phase-production-build' || !process.env.REDIS_URL;
 }
 
+function getRedisUrl() {
+  return process.env.REDIS_URL ?? 'redis://localhost:6379';
+}
+
 function getPublishQueue() {
   if (!publishQueue) {
-    publishQueue = new Queue('publish', { connection: redis });
+    publishQueue = new Queue('publish', { connection: { url: getRedisUrl(), maxRetriesPerRequest: null, lazyConnect: true } });
   }
   return publishQueue;
 }
 
 function getDeleteRemoteQueue() {
   if (!deleteRemoteQueue) {
-    deleteRemoteQueue = new Queue('delete_remote', { connection: redis });
+    deleteRemoteQueue = new Queue('delete_remote', { connection: { url: getRedisUrl(), maxRetriesPerRequest: null, lazyConnect: true } });
   }
   return deleteRemoteQueue;
 }
 
 function getSyncCommentsQueue() {
   if (!syncCommentsQueue) {
-    syncCommentsQueue = new Queue('sync_comments', { connection: redis });
+    syncCommentsQueue = new Queue('sync_comments', { connection: { url: getRedisUrl(), maxRetriesPerRequest: null, lazyConnect: true } });
   }
   return syncCommentsQueue;
 }

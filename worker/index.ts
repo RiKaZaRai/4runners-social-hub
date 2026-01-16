@@ -1,8 +1,13 @@
 import { Worker } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
-import { redis } from '@/lib/redis';
 
 const prisma = new PrismaClient();
+
+const redisConnection = {
+  url: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  maxRetriesPerRequest: null,
+  lazyConnect: true
+};
 
 async function markStatus(
   outboxJobId: string,
@@ -48,7 +53,7 @@ const publishWorker = new Worker(
       throw error;
     }
   },
-  { connection: redis }
+  { connection: redisConnection }
 );
 
 const deleteWorker = new Worker(
@@ -77,7 +82,7 @@ const deleteWorker = new Worker(
       throw error;
     }
   },
-  { connection: redis }
+  { connection: redisConnection }
 );
 
 const syncWorker = new Worker(
@@ -93,7 +98,7 @@ const syncWorker = new Worker(
       throw error;
     }
   },
-  { connection: redis }
+  { connection: redisConnection }
 );
 
 function shutdown() {
