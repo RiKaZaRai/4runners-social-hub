@@ -135,6 +135,7 @@ export function DocTree({
 
   const handleDragOver = (e: React.DragEvent, folderId: string | null) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent bubbling to parent containers
     e.dataTransfer.dropEffect = 'move';
     if (folderId === null) {
       setIsDropOnRoot(true);
@@ -145,13 +146,19 @@ export function DocTree({
     }
   };
 
-  const handleDragLeave = () => {
-    setDropTargetId(null);
-    setIsDropOnRoot(false);
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation();
+    // Only reset if we're leaving to outside the tree
+    const relatedTarget = e.relatedTarget as HTMLElement | null;
+    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+      setDropTargetId(null);
+      setIsDropOnRoot(false);
+    }
   };
 
   const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent bubbling to parent containers
     if (!draggedItem) return;
 
     const { type, id } = draggedItem;
