@@ -6,6 +6,8 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import TextAlign from '@tiptap/extension-text-align';
+import { Indent as IndentExtension } from '@/lib/tiptap/indent-extension';
 import { common, createLowlight } from 'lowlight';
 import {
   Bold,
@@ -18,6 +20,12 @@ import {
   Quote,
   Code,
   Link as LinkIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Indent as IndentIcon,
+  Outdent as OutdentIcon,
   Undo,
   Redo,
   Save
@@ -73,7 +81,11 @@ export function DocEditor({
       }),
       CodeBlockLowlight.configure({
         lowlight
-      })
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      }),
+      IndentExtension
     ],
     content: initialContent,
     editable: !readOnly,
@@ -257,6 +269,52 @@ export function DocEditor({
             title="Bloc de code"
           >
             <Code className="h-4 w-4" />
+          </ToolbarButton>
+
+          <div className="mx-1 h-4 w-px bg-border" />
+
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            isActive={editor.isActive({ textAlign: 'left' })}
+            title="Aligner a gauche"
+          >
+            <AlignLeft className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            isActive={editor.isActive({ textAlign: 'center' })}
+            title="Centrer"
+          >
+            <AlignCenter className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            isActive={editor.isActive({ textAlign: 'right' })}
+            title="Aligner a droite"
+          >
+            <AlignRight className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+            isActive={editor.isActive({ textAlign: 'justify' })}
+            title="Justifier"
+          >
+            <AlignJustify className="h-4 w-4" />
+          </ToolbarButton>
+
+          <div className="mx-1 h-4 w-px bg-border" />
+
+          <ToolbarButton
+            onClick={() => editor.chain().focus().indent().run()}
+            title="Augmenter le retrait"
+          >
+            <IndentIcon className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().outdent().run()}
+            title="Diminuer le retrait"
+          >
+            <OutdentIcon className="h-4 w-4" />
           </ToolbarButton>
 
           <div className="mx-1 h-4 w-px bg-border" />
