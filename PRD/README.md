@@ -18,4 +18,3 @@ centrée sur l’échange client, la validation et la production.
 - Un ClickUp bis
 - Un Notion bis
 - Un CRM
-- Un outil collaboratif temps réel

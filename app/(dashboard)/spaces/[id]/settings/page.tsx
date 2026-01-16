@@ -3,7 +3,8 @@ import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { SpaceSettingsPanel, SocialSettings } from '@/components/space-settings-panel';
 import { isAgencyAdmin, isAgencyManager } from '@/lib/roles';
-import { AVAILABLE_SPACE_MODULES, getSpaceModules, SpaceModuleName } from '@/lib/modules';
+import { AVAILABLE_SPACE_MODULES, SpaceModuleName } from '@/lib/modules';
+import { getSpaceModules } from '@/lib/modules.server';
 
 export default async function SpaceSettingsPage({
   params

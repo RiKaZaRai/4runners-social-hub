@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { hasModule } from '@/lib/modules';
+import { hasModule } from '@/lib/modules.server';
 import { isAgencyAdmin, isAgencyRole, isClientRole } from '@/lib/roles';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
