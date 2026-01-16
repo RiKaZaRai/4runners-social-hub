@@ -227,8 +227,9 @@ export function useDocTree({ tenantId, folders, documents, currentDocId, basePat
   };
 
   // Dialog openers
-  const openNewFolderDialog = (parentId: string | null, depth: number) => {
-    if (depth >= 1) return; // Max 2 levels of folders
+  // depth = depth of the new folder to create (0 = root, 1 = subfolder, 2 = sub-subfolder)
+  const openNewFolderDialog = (parentId: string | null, newFolderDepth: number) => {
+    if (newFolderDepth > 1) return; // Max 2 levels: depth 0 and 1
     setTargetParentId(parentId);
     setInputValue('');
     setShowNewFolderDialog(true);
