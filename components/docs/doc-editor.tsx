@@ -5,6 +5,8 @@ import { useEditor, EditorContent, type JSONContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
 import {
   Bold,
   Italic,
@@ -12,11 +14,16 @@ import {
   ListOrdered,
   Heading1,
   Heading2,
+  Heading3,
+  Quote,
+  Code,
   Link as LinkIcon,
   Undo,
   Redo,
   Save
 } from 'lucide-react';
+
+const lowlight = createLowlight(common);
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -52,7 +59,8 @@ export function DocEditor({
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3]
-        }
+        },
+        codeBlock: false // Disable default codeBlock to use CodeBlockLowlight
       }),
       Placeholder.configure({
         placeholder: 'Commencez a ecrire...'
@@ -62,6 +70,9 @@ export function DocEditor({
         HTMLAttributes: {
           class: 'text-primary underline'
         }
+      }),
+      CodeBlockLowlight.configure({
+        lowlight
       })
     ],
     content: initialContent,
@@ -179,6 +190,13 @@ export function DocEditor({
           >
             <Heading2 className="h-4 w-4" />
           </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            isActive={editor.isActive('heading', { level: 3 })}
+            title="Titre 3"
+          >
+            <Heading3 className="h-4 w-4" />
+          </ToolbarButton>
 
           <div className="mx-1 h-4 w-px bg-border" />
 
@@ -222,6 +240,23 @@ export function DocEditor({
             title="Lien"
           >
             <LinkIcon className="h-4 w-4" />
+          </ToolbarButton>
+
+          <div className="mx-1 h-4 w-px bg-border" />
+
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            isActive={editor.isActive('blockquote')}
+            title="Citation"
+          >
+            <Quote className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            isActive={editor.isActive('codeBlock')}
+            title="Bloc de code"
+          >
+            <Code className="h-4 w-4" />
           </ToolbarButton>
 
           <div className="mx-1 h-4 w-px bg-border" />
