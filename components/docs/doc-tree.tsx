@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Folder,
   FolderOpen,
@@ -15,26 +13,11 @@ import {
   Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import {
-  createFolder,
-  createDocument,
-  renameFolder,
-  deleteFolder,
-  deleteDocument,
-  moveFolder,
-  moveDocument,
-  type FolderWithChildren,
-  type DocumentSummary
-} from '@/lib/actions/documents';
+import type { FolderWithChildren, DocumentSummary } from '@/lib/actions/documents';
+import { useDocTree } from './hooks/useDocTree';
+import { NewFolderDialog, RenameFolderDialog, DeleteDialog } from './dialogs/folder-dialogs';
+import { NewDocumentDialog } from './dialogs/document-dialogs';
 
 interface DocTreeProps {
   tenantId: string | null;
@@ -51,228 +34,42 @@ export function DocTree({
   currentDocId,
   basePath
 }: DocTreeProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-
-  // Dialog states
-  const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
-  const [showNewDocDialog, setShowNewDocDialog] = useState(false);
-  const [showRenameDialog, setShowRenameDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  const [targetParentId, setTargetParentId] = useState<string | null>(null);
-  const [selectedFolder, setSelectedFolder] = useState<FolderWithChildren | null>(null);
-  const [selectedDoc, setSelectedDoc] = useState<DocumentSummary | null>(null);
-  const [inputValue, setInputValue] = useState('');
-
-  // Drag & drop state
-  const [draggedItem, setDraggedItem] = useState<{ type: 'folder' | 'doc'; id: string } | null>(null);
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-  const [isDropOnRoot, setIsDropOnRoot] = useState(false);
-
-  const toggleFolder = (folderId: string) => {
-    setExpandedFolders((prev) => {
-      const next = new Set(prev);
-      if (next.has(folderId)) {
-        next.delete(folderId);
-      } else {
-        next.add(folderId);
-      }
-      return next;
-    });
-  };
-
-  const getDocumentsInFolder = (folderId: string | null) => {
-    return documents.filter((d) => d.folderId === folderId);
-  };
-
-  // Helper: get folder depth
-  const getFolderDepth = (folderId: string | null, allFolders: FolderWithChildren[]): number => {
-    if (!folderId) return 0;
-    const findDepth = (folders: FolderWithChildren[], targetId: string, currentDepth: number): number => {
-      for (const folder of folders) {
-        if (folder.id === targetId) return currentDepth;
-        const found = findDepth(folder.children, targetId, currentDepth + 1);
-        if (found !== -1) return found;
-      }
-      return -1;
-    };
-    return findDepth(allFolders, folderId, 1);
-  };
-
-  // Helper: check if folder is descendant of another
-  const isDescendantOf = (folderId: string, ancestorId: string, allFolders: FolderWithChildren[]): boolean => {
-    const findFolder = (folders: FolderWithChildren[]): FolderWithChildren | null => {
-      for (const folder of folders) {
-        if (folder.id === ancestorId) return folder;
-        const found = findFolder(folder.children);
-        if (found) return found;
-      }
-      return null;
-    };
-    const ancestor = findFolder(allFolders);
-    if (!ancestor) return false;
-    const checkDescendants = (folder: FolderWithChildren): boolean => {
-      if (folder.id === folderId) return true;
-      return folder.children.some(checkDescendants);
-    };
-    return checkDescendants(ancestor);
-  };
-
-  // Drag handlers
-  const handleDragStart = (e: React.DragEvent, type: 'folder' | 'doc', id: string) => {
-    setDraggedItem({ type, id });
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', JSON.stringify({ type, id }));
-  };
-
-  const handleDragEnd = () => {
-    setDraggedItem(null);
-    setDropTargetId(null);
-    setIsDropOnRoot(false);
-  };
-
-  const handleDragOver = (e: React.DragEvent, folderId: string | null) => {
-    e.preventDefault();
-    e.stopPropagation(); // Prevent bubbling to parent containers
-    e.dataTransfer.dropEffect = 'move';
-    if (folderId === null) {
-      setIsDropOnRoot(true);
-      setDropTargetId(null);
-    } else {
-      setIsDropOnRoot(false);
-      setDropTargetId(folderId);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.stopPropagation();
-    // Only reset if we're leaving to outside the tree
-    const relatedTarget = e.relatedTarget as HTMLElement | null;
-    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
-      setDropTargetId(null);
-      setIsDropOnRoot(false);
-    }
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
-    e.preventDefault();
-    e.stopPropagation(); // Prevent bubbling to parent containers
-    if (!draggedItem) return;
-
-    const { type, id } = draggedItem;
-
-    // Prevent dropping folder into itself or its descendants
-    if (type === 'folder') {
-      if (targetFolderId) {
-        if (id === targetFolderId) return;
-        if (isDescendantOf(targetFolderId, id, folders)) return;
-
-        // Check depth limit (max 3 levels)
-        // targetDepth: 1 = root folder, 2 = subfolder, 3 = sub-subfolder
-        const targetDepth = getFolderDepth(targetFolderId, folders);
-        if (targetDepth >= 3) return; // Can't drop into a level-3 folder
-      }
-    }
-
-    startTransition(async () => {
-      try {
-        if (type === 'folder') {
-          await moveFolder(id, targetFolderId);
-        } else {
-          await moveDocument(id, targetFolderId);
-        }
-        router.refresh();
-      } catch {
-        // Silently fail - item stays in place
-      }
-    });
-
-    handleDragEnd();
-  };
-
-  const handleCreateFolder = async () => {
-    if (!inputValue.trim()) return;
-    startTransition(async () => {
-      await createFolder(tenantId, targetParentId, inputValue);
-      setShowNewFolderDialog(false);
-      setInputValue('');
-      router.refresh();
-    });
-  };
-
-  const handleCreateDocument = async () => {
-    if (!inputValue.trim()) return;
-    startTransition(async () => {
-      const doc = await createDocument(tenantId, targetParentId, inputValue);
-      setShowNewDocDialog(false);
-      setInputValue('');
-      router.push(`${basePath}/${doc.id}/edit`);
-    });
-  };
-
-  const handleRenameFolder = async () => {
-    if (!inputValue.trim() || !selectedFolder) return;
-    startTransition(async () => {
-      await renameFolder(selectedFolder.id, inputValue);
-      setShowRenameDialog(false);
-      setInputValue('');
-      setSelectedFolder(null);
-      router.refresh();
-    });
-  };
-
-  const handleDeleteFolder = async () => {
-    if (!selectedFolder) return;
-    startTransition(async () => {
-      await deleteFolder(selectedFolder.id);
-      setShowDeleteDialog(false);
-      setSelectedFolder(null);
-      router.refresh();
-    });
-  };
-
-  const handleDeleteDocument = async () => {
-    if (!selectedDoc) return;
-    startTransition(async () => {
-      await deleteDocument(selectedDoc.id);
-      setShowDeleteDialog(false);
-      setSelectedDoc(null);
-      router.refresh();
-    });
-  };
-
-  const openNewFolderDialog = (parentId: string | null, depth: number) => {
-    if (depth >= 2) return; // Max 3 levels
-    setTargetParentId(parentId);
-    setInputValue('');
-    setShowNewFolderDialog(true);
-  };
-
-  const openNewDocDialog = (folderId: string | null) => {
-    setTargetParentId(folderId);
-    setInputValue('');
-    setShowNewDocDialog(true);
-  };
-
-  const openRenameDialog = (folder: FolderWithChildren) => {
-    setSelectedFolder(folder);
-    setInputValue(folder.name);
-    setShowRenameDialog(true);
-  };
-
-  const openDeleteFolderDialog = (folder: FolderWithChildren) => {
-    setSelectedFolder(folder);
-    setSelectedDoc(null);
-    setShowDeleteDialog(true);
-  };
-
-  const openDeleteDocDialog = (doc: DocumentSummary) => {
-    setSelectedDoc(doc);
-    setSelectedFolder(null);
-    setShowDeleteDialog(true);
-  };
+  const {
+    isPending,
+    expandedFolders,
+    draggedItem,
+    dropTargetId,
+    isDropOnRoot,
+    showNewFolderDialog,
+    setShowNewFolderDialog,
+    showNewDocDialog,
+    setShowNewDocDialog,
+    showRenameDialog,
+    setShowRenameDialog,
+    showDeleteDialog,
+    setShowDeleteDialog,
+    selectedFolder,
+    selectedDoc,
+    inputValue,
+    setInputValue,
+    toggleFolder,
+    getDocumentsInFolder,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleCreateFolder,
+    handleCreateDocument,
+    handleRenameFolder,
+    handleDeleteFolder,
+    handleDeleteDocument,
+    openNewFolderDialog,
+    openNewDocDialog,
+    openRenameDialog,
+    openDeleteFolderDialog,
+    openDeleteDocDialog
+  } = useDocTree({ tenantId, folders, documents, basePath });
 
   const renderFolder = (folder: FolderWithChildren, depth: number = 0) => {
     const isExpanded = expandedFolders.has(folder.id);
@@ -466,105 +263,43 @@ export function DocTree({
         </p>
       )}
 
-      {/* Dialog: Nouveau dossier */}
-      <Dialog open={showNewFolderDialog} onOpenChange={setShowNewFolderDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nouveau dossier</DialogTitle>
-          </DialogHeader>
-          <Input
-            placeholder="Nom du dossier"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
-            autoFocus
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewFolderDialog(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleCreateFolder} disabled={isPending || !inputValue.trim()}>
-              Creer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Dialogs */}
+      <NewFolderDialog
+        open={showNewFolderDialog}
+        onOpenChange={setShowNewFolderDialog}
+        inputValue={inputValue}
+        onInputChange={setInputValue}
+        onSubmit={handleCreateFolder}
+        isPending={isPending}
+      />
 
-      {/* Dialog: Nouveau document */}
-      <Dialog open={showNewDocDialog} onOpenChange={setShowNewDocDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nouveau document</DialogTitle>
-          </DialogHeader>
-          <Input
-            placeholder="Titre du document"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreateDocument()}
-            autoFocus
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewDocDialog(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleCreateDocument} disabled={isPending || !inputValue.trim()}>
-              Creer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewDocumentDialog
+        open={showNewDocDialog}
+        onOpenChange={setShowNewDocDialog}
+        inputValue={inputValue}
+        onInputChange={setInputValue}
+        onSubmit={handleCreateDocument}
+        isPending={isPending}
+      />
 
-      {/* Dialog: Renommer */}
-      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Renommer le dossier</DialogTitle>
-          </DialogHeader>
-          <Input
-            placeholder="Nouveau nom"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleRenameFolder()}
-            autoFocus
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleRenameFolder} disabled={isPending || !inputValue.trim()}>
-              Renommer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RenameFolderDialog
+        open={showRenameDialog}
+        onOpenChange={setShowRenameDialog}
+        inputValue={inputValue}
+        onInputChange={setInputValue}
+        onSubmit={handleRenameFolder}
+        isPending={isPending}
+      />
 
-      {/* Dialog: Supprimer */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {selectedFolder
-              ? `Voulez-vous supprimer le dossier "${selectedFolder.name}" et tout son contenu ?`
-              : selectedDoc
-                ? `Voulez-vous supprimer le document "${selectedDoc.title}" ?`
-                : ''}
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Annuler
-            </Button>
-            <Button
-              variant="default"
-              onClick={selectedFolder ? handleDeleteFolder : handleDeleteDocument}
-              disabled={isPending}
-            >
-              Supprimer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        folder={selectedFolder}
+        document={selectedDoc}
+        onDeleteFolder={handleDeleteFolder}
+        onDeleteDocument={handleDeleteDocument}
+        isPending={isPending}
+      />
     </div>
   );
 }
