@@ -30,6 +30,8 @@ import {
   renameFolder,
   deleteFolder,
   deleteDocument,
+  moveFolder,
+  moveDocument,
   type FolderWithChildren,
   type DocumentSummary
 } from '@/lib/actions/documents';
@@ -64,6 +66,11 @@ export function DocTree({
   const [selectedDoc, setSelectedDoc] = useState<DocumentSummary | null>(null);
   const [inputValue, setInputValue] = useState('');
 
+  // Drag & drop state
+  const [draggedItem, setDraggedItem] = useState<{ type: 'folder' | 'doc'; id: string } | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [isDropOnRoot, setIsDropOnRoot] = useState(false);
+
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) => {
       const next = new Set(prev);
@@ -78,6 +85,101 @@ export function DocTree({
 
   const getDocumentsInFolder = (folderId: string | null) => {
     return documents.filter((d) => d.folderId === folderId);
+  };
+
+  // Helper: get folder depth
+  const getFolderDepth = (folderId: string | null, allFolders: FolderWithChildren[]): number => {
+    if (!folderId) return 0;
+    const findDepth = (folders: FolderWithChildren[], targetId: string, currentDepth: number): number => {
+      for (const folder of folders) {
+        if (folder.id === targetId) return currentDepth;
+        const found = findDepth(folder.children, targetId, currentDepth + 1);
+        if (found !== -1) return found;
+      }
+      return -1;
+    };
+    return findDepth(allFolders, folderId, 1);
+  };
+
+  // Helper: check if folder is descendant of another
+  const isDescendantOf = (folderId: string, ancestorId: string, allFolders: FolderWithChildren[]): boolean => {
+    const findFolder = (folders: FolderWithChildren[]): FolderWithChildren | null => {
+      for (const folder of folders) {
+        if (folder.id === ancestorId) return folder;
+        const found = findFolder(folder.children);
+        if (found) return found;
+      }
+      return null;
+    };
+    const ancestor = findFolder(allFolders);
+    if (!ancestor) return false;
+    const checkDescendants = (folder: FolderWithChildren): boolean => {
+      if (folder.id === folderId) return true;
+      return folder.children.some(checkDescendants);
+    };
+    return checkDescendants(ancestor);
+  };
+
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent, type: 'folder' | 'doc', id: string) => {
+    setDraggedItem({ type, id });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type, id }));
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDropTargetId(null);
+    setIsDropOnRoot(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId: string | null) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (folderId === null) {
+      setIsDropOnRoot(true);
+      setDropTargetId(null);
+    } else {
+      setIsDropOnRoot(false);
+      setDropTargetId(folderId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDropTargetId(null);
+    setIsDropOnRoot(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+
+    const { type, id } = draggedItem;
+
+    // Prevent dropping folder into itself or its descendants
+    if (type === 'folder' && targetFolderId) {
+      if (id === targetFolderId) return;
+      if (isDescendantOf(targetFolderId, id, folders)) return;
+
+      // Check depth limit (max 3 levels)
+      const targetDepth = getFolderDepth(targetFolderId, folders);
+      if (targetDepth >= 2) return;
+    }
+
+    startTransition(async () => {
+      try {
+        if (type === 'folder') {
+          await moveFolder(id, targetFolderId);
+        } else {
+          await moveDocument(id, targetFolderId);
+        }
+        router.refresh();
+      } catch {
+        // Silently fail - item stays in place
+      }
+    });
+
+    handleDragEnd();
   };
 
   const handleCreateFolder = async () => {
@@ -166,13 +268,23 @@ export function DocTree({
     const isExpanded = expandedFolders.has(folder.id);
     const docsInFolder = getDocumentsInFolder(folder.id);
     const hasChildren = folder.children.length > 0 || docsInFolder.length > 0;
+    const isDropTarget = dropTargetId === folder.id;
+    const isDragging = draggedItem?.type === 'folder' && draggedItem.id === folder.id;
 
     return (
       <div key={folder.id}>
         <div
+          draggable
+          onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
+          onDragEnd={handleDragEnd}
+          onDragOver={(e) => handleDragOver(e, folder.id)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, folder.id)}
           className={cn(
             'group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted',
-            'cursor-pointer'
+            'cursor-grab active:cursor-grabbing',
+            isDropTarget && 'bg-primary/10 ring-2 ring-primary/50',
+            isDragging && 'opacity-50'
           )}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
         >
@@ -255,13 +367,19 @@ export function DocTree({
 
   const renderDocument = (doc: DocumentSummary, depth: number = 0) => {
     const isActive = doc.id === currentDocId;
+    const isDragging = draggedItem?.type === 'doc' && draggedItem.id === doc.id;
 
     return (
       <div
         key={doc.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, 'doc', doc.id)}
+        onDragEnd={handleDragEnd}
         className={cn(
           'group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm',
-          isActive ? 'bg-muted font-medium' : 'hover:bg-muted'
+          'cursor-grab active:cursor-grabbing',
+          isActive ? 'bg-muted font-medium' : 'hover:bg-muted',
+          isDragging && 'opacity-50'
         )}
         style={{ paddingLeft: `${depth * 12 + 28}px` }}
       >
@@ -310,7 +428,15 @@ export function DocTree({
       </div>
 
       {/* Arborescence */}
-      <div className="space-y-0.5">
+      <div
+        className={cn(
+          'space-y-0.5 rounded-md p-1 transition-colors',
+          isDropOnRoot && draggedItem && 'bg-primary/10 ring-2 ring-primary/50'
+        )}
+        onDragOver={(e) => handleDragOver(e, null)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, null)}
+      >
         {folders.map((folder) => renderFolder(folder))}
         {rootDocs.map((doc) => renderDocument(doc))}
       </div>
