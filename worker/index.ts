@@ -1,7 +1,16 @@
 import { Worker } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL must be set for worker');
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+  log: ['error', 'warn']
+});
 
 const redisConnection = {
   url: process.env.REDIS_URL ?? 'redis://localhost:6379',
