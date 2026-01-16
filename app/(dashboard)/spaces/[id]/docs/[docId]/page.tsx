@@ -74,6 +74,11 @@ export default async function SpaceDocumentPage({
     redirect(`/spaces/${spaceId}/docs`);
   }
 
+  // Agence: rediriger vers l'éditeur directement
+  if (isAgency) {
+    redirect(`/spaces/${spaceId}/docs/${docId}/edit`);
+  }
+
   // Pour l'agence: récupérer arborescence et versions
   let folders: Awaited<ReturnType<typeof getFoldersAndDocuments>>['folders'] = [];
   let documents: Awaited<ReturnType<typeof getFoldersAndDocuments>>['documents'] = [];

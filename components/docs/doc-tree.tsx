@@ -200,7 +200,7 @@ export function DocTree({
           <GripVertical className="h-4 w-4" />
         </div>
         <FileText className="h-4 w-4 text-muted-foreground" />
-        <Link href={`${basePath}/${doc.id}`} className="flex-1 truncate">
+        <Link href={`${basePath}/${doc.id}/edit`} className="flex-1 truncate">
           {doc.title}
         </Link>
         <button
