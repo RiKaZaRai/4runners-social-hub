@@ -169,7 +169,7 @@ Avant toute conclusion :
 
 ## Déploiement & validation finale
 
-❌ Ne jamais conclure “OK prod” si une commande échoue.
+❌ Ne jamais conclure "OK prod" si une commande échoue.
 
 Commandes obligatoires :
 - `pnpm test`
@@ -178,6 +178,14 @@ Commandes obligatoires :
 Toute migration DB doit être :
 - explicitement signalée
 - justifiée
+
+### Règle de commit/push
+
+**Si tout est OK (build passe) → commit + push automatiquement.**
+
+Le push déclenche le déploiement automatique sur Dokploy.
+
+⚠️ **Migration Prisma** : Si une migration est nécessaire, elle doit être incluse dans le même commit/push. Le fichier de migration doit exister dans `prisma/migrations/` pour que le déploiement l'applique automatiquement.
 
 ---
 

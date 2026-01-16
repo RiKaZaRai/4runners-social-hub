@@ -14,7 +14,8 @@ import {
   Share2,
   AlertCircle,
   CheckCircle2,
-  Lightbulb
+  Lightbulb,
+  FileText
 } from 'lucide-react';
 
 // Helper: map post status to FR label + badge variant
@@ -96,6 +97,7 @@ export default async function SpaceOverviewPage({
 
   const hasSocialModule = await hasModule(id, 'social');
   const hasMessagesModule = await hasModule(id, 'messages');
+  const hasDocsModule = await hasModule(id, 'docs');
 
   // Fetch pending posts (social module)
   let pendingPosts: { id: string; title: string; status: PostStatusKey; network: string }[] = [];
@@ -287,6 +289,14 @@ export default async function SpaceOverviewPage({
                   {pendingCount}
                 </Badge>
               )}
+            </Link>
+          </Button>
+        )}
+        {hasDocsModule && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/spaces/${id}/docs`}>
+              <FileText className="mr-2 h-4 w-4" />
+              Documents
             </Link>
           </Button>
         )}

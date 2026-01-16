@@ -87,23 +87,25 @@ enum InboxStatus {
 }
 
 model Tenant {
-  id            String             @id @default(uuid())
-  name          String             @unique
-  active        Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  memberships   TenantMembership[]
-  posts         Post[]
-  ideas         Idea[]
-  assets        Asset[]
-  channels      TenantChannel[]
-  outboxJobs    OutboxJob[]
-  auditLogs     AuditLog[]
-  inboxItems    InboxItem[]
-  spaceMessages SpaceMessage[]
-  spaceInvites  SpaceInvite[]
-  modules       Json               @default("[]")
-  socialSettings Json              @default("{}")
+  id             String             @id @default(uuid())
+  name           String             @unique
+  active         Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  memberships    TenantMembership[]
+  posts          Post[]
+  ideas          Idea[]
+  assets         Asset[]
+  channels       TenantChannel[]
+  outboxJobs     OutboxJob[]
+  auditLogs      AuditLog[]
+  inboxItems     InboxItem[]
+  spaceMessages  SpaceMessage[]
+  spaceInvites   SpaceInvite[]
+  docFolders     DocFolder[]
+  documents      Document[]
+  modules        Json               @default("[]")
+  socialSettings Json               @default("{}")
 }
 
 model User {
@@ -128,6 +130,9 @@ model User {
   spaceMessages        SpaceMessage[]
   spaceInvitesCreated  SpaceInvite[]      @relation("spaceInvitesCreated")
   spaceInvitesAccepted SpaceInvite[]      @relation("spaceInvitesAccepted")
+  docsCreated          Document[]         @relation("docs_created")
+  docsUpdated          Document[]         @relation("docs_updated")
+  docVersionsCreated   DocumentVersion[]  @relation("doc_versions_created")
 }
 
 model TenantMembership {
@@ -367,4 +372,62 @@ model InboxItem {
   @@unique([spaceId, entityKey])
   @@index([spaceId, status])
   @@index([updatedAt])
+}
+
+// ============================================
+// Documents Module
+// ============================================
+
+model DocFolder {
+  id        String      @id @default(uuid())
+  tenantId  String?     // null = Wiki agence (interne)
+  parentId  String?     // null = racine
+  name      String
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  tenant    Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent    DocFolder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  DocFolder[] @relation("FolderTree")
+  documents Document[]
+
+  @@index([tenantId, parentId])
+}
+
+model Document {
+  id          String            @id @default(uuid())
+  tenantId    String?           // null = Wiki agence (interne)
+  folderId    String?
+  title       String
+  content     Json              // ProseMirror JSON (source of truth)
+  isPublic    Boolean           @default(false)
+  publicToken String?           @unique
+  createdById String
+  updatedById String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  tenant    Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  folder    DocFolder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  createdBy User              @relation("docs_created", fields: [createdById], references: [id])
+  updatedBy User              @relation("docs_updated", fields: [updatedById], references: [id])
+  versions  DocumentVersion[]
+
+  @@index([tenantId, folderId])
+  @@index([publicToken])
+}
+
+model DocumentVersion {
+  id          String   @id @default(uuid())
+  documentId  String
+  title       String
+  content     Json     // ProseMirror JSON snapshot
+  createdById String
+  createdAt   DateTime @default(now())
+
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("doc_versions_created", fields: [createdById], references: [id])
+
+  @@index([documentId, createdAt])
 }

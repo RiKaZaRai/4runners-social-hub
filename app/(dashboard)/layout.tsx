@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, Home, Inbox, Settings, Link2 } from 'lucide-react';
+import { Building2, Home, Inbox, Settings, Link2, FileText } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <Building2 className="h-4 w-4" />
                 Espaces
               </Link>
+              {!isClient && (
+                <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/wiki">
+                  <FileText className="h-4 w-4" />
+                  Wiki
+                </Link>
+              )}
             </div>
 
             {/* Section Espaces */}
