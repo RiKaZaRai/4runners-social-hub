@@ -87,14 +87,14 @@ export function isDescendantOf(
 /**
  * Check if a folder move is valid (not into itself, descendants, or exceeding depth)
  *
- * maxDepth = 3 means: root (0) -> level 1 -> level 2 -> level 3 (max)
- * So we allow folders at depths 1, 2, 3 (3 levels total)
+ * maxDepth = 2 means: root (0) -> level 1 -> level 2 (max)
+ * So we allow folders at depths 1, 2 (2 levels of folders)
  */
 export function canMoveFolder(
   folderId: string,
   targetFolderId: string | null,
   allFolders: FolderWithChildren[],
-  maxDepth: number = 3
+  maxDepth: number = 2
 ): boolean {
   // Can't drop into itself
   if (folderId === targetFolderId) return false;

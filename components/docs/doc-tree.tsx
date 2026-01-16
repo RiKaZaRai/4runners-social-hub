@@ -121,7 +121,7 @@ export function DocTree({
           <span className="flex-1 truncate">{folder.name}</span>
 
           <div className="hidden items-center gap-0.5 group-hover:flex">
-            {depth < 2 && (
+            {depth < 1 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
