@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   createFolder,
@@ -19,13 +19,61 @@ interface UseDocTreeProps {
   tenantId: string | null;
   folders: FolderWithChildren[];
   documents: DocumentSummary[];
+  currentDocId?: string;
   basePath: string;
 }
 
-export function useDocTree({ tenantId, folders, documents, basePath }: UseDocTreeProps) {
+/**
+ * Get all ancestor folder IDs for a given folder
+ */
+function getAncestorFolderIds(
+  folderId: string | null,
+  folders: FolderWithChildren[]
+): string[] {
+  if (!folderId) return [];
+
+  const ancestors: string[] = [];
+
+  const findPath = (
+    folderList: FolderWithChildren[],
+    targetId: string,
+    path: string[]
+  ): string[] | null => {
+    for (const folder of folderList) {
+      const currentPath = [...path, folder.id];
+      if (folder.id === targetId) {
+        return currentPath;
+      }
+      const found = findPath(folder.children, targetId, currentPath);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const path = findPath(folders, folderId, []);
+  if (path) {
+    ancestors.push(...path);
+  }
+
+  return ancestors;
+}
+
+export function useDocTree({ tenantId, folders, documents, currentDocId, basePath }: UseDocTreeProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  // Calculate initial expanded folders based on current document
+  const initialExpanded = useMemo(() => {
+    if (!currentDocId) return new Set<string>();
+
+    const currentDoc = documents.find((d) => d.id === currentDocId);
+    if (!currentDoc?.folderId) return new Set<string>();
+
+    const ancestorIds = getAncestorFolderIds(currentDoc.folderId, folders);
+    return new Set(ancestorIds);
+  }, [currentDocId, documents, folders]);
+
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(initialExpanded);
 
   // Dialog states
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);

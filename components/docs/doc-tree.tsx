@@ -69,7 +69,7 @@ export function DocTree({
     openRenameDialog,
     openDeleteFolderDialog,
     openDeleteDocDialog
-  } = useDocTree({ tenantId, folders, documents, basePath });
+  } = useDocTree({ tenantId, folders, documents, currentDocId, basePath });
 
   const renderFolder = (folder: FolderWithChildren, depth: number = 0) => {
     const isExpanded = expandedFolders.has(folder.id);
