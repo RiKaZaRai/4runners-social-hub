@@ -49,7 +49,8 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
           levels: [1, 2, 3]
         },
         codeBlock: false,
-        horizontalRule: false
+        horizontalRule: false,
+        link: false // Disabled because we add Link separately with custom config
       }),
       Placeholder.configure({
         placeholder: 'Tapez "/" pour voir les commandes disponibles...'

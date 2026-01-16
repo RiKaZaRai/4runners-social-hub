@@ -1,5 +1,6 @@
 import { Extension } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
+import { PluginKey } from '@tiptap/pm/state';
 
 export interface EmojiItem {
   emoji: string;
@@ -116,6 +117,7 @@ export const EmojiCommand = Extension.create({
     return [
       Suggestion({
         editor: this.editor,
+        pluginKey: new PluginKey('emojiSuggestion'),
         ...this.options.suggestion
       })
     ];
