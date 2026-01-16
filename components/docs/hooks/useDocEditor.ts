@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useEditor, ReactRenderer } from '@tiptap/react';
 import type { JSONContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -31,16 +31,23 @@ interface UseDocEditorProps {
   readOnly?: boolean;
 }
 
+const AUTOSAVE_DELAY = 2000; // 2 seconds debounce
+
 export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = false }: UseDocEditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // Dialog states
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+
+  // Autosave refs
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const titleRef = useRef(title);
 
   const editor = useEditor({
     extensions: [
@@ -206,17 +213,54 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     }
   });
 
+  // Keep titleRef in sync
+  useEffect(() => {
+    titleRef.current = title;
+  }, [title]);
+
   const handleSave = useCallback(async () => {
     if (!editor || isSaving) return;
 
     setIsSaving(true);
     try {
-      await onSave(title, editor.getJSON());
+      await onSave(titleRef.current, editor.getJSON());
       setIsDirty(false);
+      setLastSaved(new Date());
     } finally {
       setIsSaving(false);
     }
-  }, [editor, title, onSave, isSaving]);
+  }, [editor, onSave, isSaving]);
+
+  // Autosave effect
+  useEffect(() => {
+    if (readOnly || !isDirty || !editor) return;
+
+    // Clear existing timer
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    // Set new timer for autosave
+    autosaveTimerRef.current = setTimeout(() => {
+      handleSave();
+    }, AUTOSAVE_DELAY);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [isDirty, readOnly, editor, handleSave]);
+
+  // Save on unmount if dirty
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
@@ -261,6 +305,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     // Save state
     isSaving,
     isDirty,
+    lastSaved,
     handleSave,
 
     // Link dialog
