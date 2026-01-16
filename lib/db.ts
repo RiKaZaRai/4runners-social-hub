@@ -2,9 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-const connectionString = process.env.DATABASE_URL;
+const fallbackDatabaseUrl = 'postgresql://postgres:postgres@localhost:5432/fourunners';
+const connectionString = process.env.DATABASE_URL ?? fallbackDatabaseUrl;
+const allowFallback = process.env.PRISMA_ALLOW_FALLBACK === 'true';
 
-if (!connectionString) {
+if (!process.env.DATABASE_URL && !allowFallback) {
   throw new Error('DATABASE_URL must be set to initialize Prisma');
 }
 

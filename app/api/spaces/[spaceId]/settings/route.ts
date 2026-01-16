@@ -3,12 +3,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireAuth, requireTenantAccess, handleApiError } from '@/lib/api-auth';
 import { isAgencyAdmin, isAgencyManager } from '@/lib/roles';
-import {
-  AVAILABLE_SPACE_MODULES,
-  SpaceModuleName,
-  setModule,
-  getSpaceModules
-} from '@/lib/modules';
+import { AVAILABLE_SPACE_MODULES, SpaceModuleName } from '@/lib/modules';
+import { getSpaceModules, setModule } from '@/lib/modules.server';
 import { getSocialSettings, updateSocialSettings, normalizeHandle } from '@/lib/space-settings';
 
 const moduleEnum = z.enum(

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { processSpaceSettingsPayload } from '@/app/api/spaces/[spaceId]/settings/route';
 import type { AuthenticatedRequest } from '@/lib/api-auth';
-import { setModule, getSpaceModules } from '@/lib/modules';
+import { setModule, getSpaceModules } from '@/lib/modules.server';
 import * as spaceSettings from '@/lib/space-settings';
 
 vi.mock('@/lib/api-auth', () => ({
@@ -10,8 +10,7 @@ vi.mock('@/lib/api-auth', () => ({
   handleApiError: vi.fn()
 }));
 
-vi.mock('@/lib/modules', () => ({
-  AVAILABLE_SPACE_MODULES: ['messages', 'social', 'docs', 'projects', 'planning'],
+vi.mock('@/lib/modules.server', () => ({
   setModule: vi.fn(),
   getSpaceModules: vi.fn()
 }));

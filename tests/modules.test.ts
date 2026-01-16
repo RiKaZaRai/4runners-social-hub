@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getSpaceModules, hasModule, setModule, AVAILABLE_SPACE_MODULES } from '@/lib/modules';
+import { getSpaceModules, hasModule, setModule } from '@/lib/modules.server';
 
 const createMockClient = () => {
   const findUnique = vi.fn();

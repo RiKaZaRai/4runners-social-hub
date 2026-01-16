@@ -1,11 +1,47 @@
 version: '3.9'
 
 services:
+  migrate:
+    container_name: social-hub-migrate
+    build: .
+    restart: "no"
+    command: pnpm prisma migrate deploy
+    environment:
+      - NODE_ENV=production
+      - APP_URL=${APP_URL}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET=${MINIO_BUCKET}
+      - MINIO_REGION=${MINIO_REGION}
+      - ADMIN_LOGIN=${ADMIN_LOGIN}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - MAIL_PROVIDER=${MAIL_PROVIDER}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_SECURE=${MAIL_SECURE}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
+      - MAIL_FROM_EMAIL=${MAIL_FROM_EMAIL}
+      - MAIL_REPLY_TO=${MAIL_REPLY_TO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - internal
+
   app:
     container_name: social-hub-app
     build: .
     restart: unless-stopped
-    command: ["sh", "-lc", "pnpm prisma migrate deploy && pnpm start"]
+    command: ["node", "server.js"]
     environment:
       - NODE_ENV=production
       - APP_URL=${APP_URL}
@@ -35,6 +71,8 @@ services:
       minio:
         condition: service_healthy
       minio-init:
+        condition: service_completed_successfully
+      migrate:
         condition: service_completed_successfully
     ports:
       - '3000:3000'
@@ -76,6 +114,8 @@ services:
       minio:
         condition: service_healthy
       minio-init:
+        condition: service_completed_successfully
+      migrate:
         condition: service_completed_successfully
     networks:
       - internal

@@ -7,7 +7,7 @@ import {
   handleApiError
 } from '@/lib/api-auth';
 import { requireCsrfToken } from '@/lib/csrf';
-import { ensureModuleEnabled } from '@/lib/modules';
+import { ensureModuleEnabled } from '@/lib/modules.server';
 import { createInboxItem } from '@/lib/inbox';
 import { PostStatus } from '@prisma/client';
 
