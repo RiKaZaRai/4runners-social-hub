@@ -14,6 +14,7 @@ import {
   Italic,
   List,
   ListOrdered,
+  Pilcrow,
   Heading1,
   Heading2,
   Heading3,
@@ -188,6 +189,13 @@ export function DocEditor({
       {/* Toolbar */}
       {!readOnly && (
         <div className="flex items-center gap-1 border-b px-4 py-2">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setParagraph().run()}
+            isActive={editor.isActive('paragraph')}
+            title="Paragraphe"
+          >
+            <Pilcrow className="h-4 w-4" />
+          </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             isActive={editor.isActive('heading', { level: 1 })}
