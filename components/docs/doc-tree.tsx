@@ -164,13 +164,16 @@ export function DocTree({
     const { type, id } = draggedItem;
 
     // Prevent dropping folder into itself or its descendants
-    if (type === 'folder' && targetFolderId) {
-      if (id === targetFolderId) return;
-      if (isDescendantOf(targetFolderId, id, folders)) return;
+    if (type === 'folder') {
+      if (targetFolderId) {
+        if (id === targetFolderId) return;
+        if (isDescendantOf(targetFolderId, id, folders)) return;
 
-      // Check depth limit (max 3 levels)
-      const targetDepth = getFolderDepth(targetFolderId, folders);
-      if (targetDepth >= 2) return;
+        // Check depth limit (max 3 levels)
+        // targetDepth: 1 = root folder, 2 = subfolder, 3 = sub-subfolder
+        const targetDepth = getFolderDepth(targetFolderId, folders);
+        if (targetDepth >= 3) return; // Can't drop into a level-3 folder
+      }
     }
 
     startTransition(async () => {
