@@ -10,7 +10,7 @@ import {
   ChevronRight,
   ChevronDown,
   Plus,
-  MoreHorizontal,
+  GripVertical,
   Pencil,
   Trash2
 } from 'lucide-react';
@@ -274,20 +274,25 @@ export function DocTree({
     return (
       <div key={folder.id}>
         <div
-          draggable
-          onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
-          onDragEnd={handleDragEnd}
           onDragOver={(e) => handleDragOver(e, folder.id)}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, folder.id)}
           className={cn(
             'group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted',
-            'cursor-grab active:cursor-grabbing',
             isDropTarget && 'bg-primary/10 ring-2 ring-primary/50',
             isDragging && 'opacity-50'
           )}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
         >
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
+            onDragEnd={handleDragEnd}
+            className="flex h-5 w-5 cursor-grab items-center justify-center text-muted-foreground/50 hover:text-muted-foreground active:cursor-grabbing"
+            title="Glisser pour deplacer"
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
           <button
             onClick={() => toggleFolder(folder.id)}
             className="flex h-5 w-5 items-center justify-center"
@@ -372,17 +377,22 @@ export function DocTree({
     return (
       <div
         key={doc.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, 'doc', doc.id)}
-        onDragEnd={handleDragEnd}
         className={cn(
           'group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm',
-          'cursor-grab active:cursor-grabbing',
           isActive ? 'bg-muted font-medium' : 'hover:bg-muted',
           isDragging && 'opacity-50'
         )}
         style={{ paddingLeft: `${depth * 12 + 28}px` }}
       >
+        <div
+          draggable
+          onDragStart={(e) => handleDragStart(e, 'doc', doc.id)}
+          onDragEnd={handleDragEnd}
+          className="flex h-5 w-5 cursor-grab items-center justify-center text-muted-foreground/50 hover:text-muted-foreground active:cursor-grabbing"
+          title="Glisser pour deplacer"
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
         <FileText className="h-4 w-4 text-muted-foreground" />
         <Link href={`${basePath}/${doc.id}`} className="flex-1 truncate">
           {doc.title}
