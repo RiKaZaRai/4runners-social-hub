@@ -16,7 +16,9 @@ import {
   getDocumentVersions
 } from '@/lib/actions/documents';
 import { NotifyButton } from './notify-button';
-import type { JSONContent } from '@tiptap/react';
+
+// Use Prisma JsonValue instead of @tiptap/react to avoid client module in server component
+type JSONContent = Record<string, unknown>;
 
 export default async function SpaceDocumentPage({
   params

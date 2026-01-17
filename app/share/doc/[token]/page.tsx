@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getPublicDocument } from '@/lib/actions/documents';
 import { DocViewer } from '@/components/docs/doc-viewer';
-import type { JSONContent } from '@tiptap/react';
+
+// Use local type instead of @tiptap/react to avoid client module in server component
+type JSONContent = Record<string, unknown>;
 
 export default async function PublicDocumentPage({
   params

@@ -660,13 +660,35 @@ export async function getDocument(docId: string) {
 
   const doc = await prisma.document.findUnique({
     where: { id: docId },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      tenantId: true,
+      isPublic: true,
+      publicToken: true,
+      createdAt: true,
+      updatedAt: true,
       createdBy: { select: { id: true, name: true, email: true } },
       updatedBy: { select: { id: true, name: true, email: true } }
     }
   });
 
-  return doc;
+  if (!doc) return null;
+
+  // Serialize for client components - plain objects only
+  return {
+    id: doc.id,
+    title: doc.title,
+    content: doc.content,
+    tenantId: doc.tenantId,
+    isPublic: doc.isPublic,
+    publicToken: doc.publicToken,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
+    createdBy: doc.createdBy ? { id: doc.createdBy.id, name: doc.createdBy.name, email: doc.createdBy.email } : null,
+    updatedBy: doc.updatedBy ? { id: doc.updatedBy.id, name: doc.updatedBy.name, email: doc.updatedBy.email } : null
+  };
 }
 
 export async function getPublicDocument(token: string) {
@@ -685,5 +707,12 @@ export async function getPublicDocument(token: string) {
     return null;
   }
 
-  return doc;
+  // Serialize for client components
+  return {
+    id: doc.id,
+    title: doc.title,
+    content: doc.content,
+    isPublic: doc.isPublic,
+    updatedAt: doc.updatedAt.toISOString()
+  };
 }

@@ -10,7 +10,9 @@ import {
   getDocument,
   getDocumentVersions
 } from '@/lib/actions/documents';
-import type { JSONContent } from '@tiptap/react';
+
+// Use local type instead of @tiptap/react to avoid client module in server component
+type JSONContent = Record<string, unknown>;
 
 export default async function SpaceDocEditPage({
   params
