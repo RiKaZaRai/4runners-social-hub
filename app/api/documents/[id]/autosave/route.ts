@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { prisma } from '@/lib/db';
 import { requireSession } from '@/lib/auth';
 import { isAgencyRole } from '@/lib/roles';
 import type { Prisma } from '@prisma/client';
+
+function hashContent(content: unknown): string {
+  return createHash('sha256').update(JSON.stringify(content)).digest('hex');
+}
 
 async function verifyDocumentAccess(docId: string, userId: string) {
   const user = await prisma.user.findUnique({
@@ -58,7 +63,7 @@ export async function POST(
       );
     }
 
-    // Récupérer le document actuel pour créer une version
+    // Récupérer le document actuel
     const currentDoc = await prisma.document.findUnique({
       where: { id: docId },
       select: { title: true, content: true, tenantId: true }
@@ -69,6 +74,19 @@ export async function POST(
         { error: 'Document not found' },
         { status: 404 }
       );
+    }
+
+    // Check if content actually changed (hash comparison)
+    const currentHash = hashContent({ title: currentDoc.title, content: currentDoc.content });
+    const newHash = hashContent({ title: title.trim(), content });
+
+    if (currentHash === newHash) {
+      // No changes, return current state without updating
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        updatedAt: new Date().toISOString()
+      });
     }
 
     // Créer une version snapshot (max 5 versions)
@@ -107,6 +125,7 @@ export async function POST(
     });
 
     return NextResponse.json({
+      ok: true,
       id: updated.id,
       title: updated.title,
       updatedAt: updated.updatedAt.toISOString()

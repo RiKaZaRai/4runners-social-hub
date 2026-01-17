@@ -3,7 +3,7 @@
 import type { JSONContent } from '@tiptap/react';
 import { EditorContent } from '@tiptap/react';
 import { DragHandle } from '@tiptap/extension-drag-handle-react';
-import { GripVertical, Check } from 'lucide-react';
+import { GripVertical, Check, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDocEditor } from './hooks/useDocEditor';
 import { EditorToolbar } from './editor-toolbar';
@@ -18,6 +18,14 @@ interface DocEditorProps {
   readOnly?: boolean;
 }
 
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
 export function DocEditor({ initialContent, initialTitle, onSave, readOnly = false }: DocEditorProps) {
   const {
     editor,
@@ -26,6 +34,7 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
     isSaving,
     isDirty,
     lastSaved,
+    saveError,
     showLinkDialog,
     setShowLinkDialog,
     linkUrl,
@@ -56,14 +65,19 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
         />
         {!readOnly && (
           <span className="text-xs text-muted-foreground">
-            {isSaving ? (
+            {saveError ? (
+              <span className="flex items-center gap-1 text-red-500">
+                <AlertCircle className="h-3 w-3" />
+                {saveError}
+              </span>
+            ) : isSaving ? (
               'Sauvegarde en cours...'
             ) : isDirty ? (
-              'Sauvegarde automatique...'
+              'Modifications non sauvegardees...'
             ) : lastSaved ? (
               <span className="flex items-center gap-1 text-green-600">
                 <Check className="h-3 w-3" />
-                Sauvegarde
+                Sauvegarde a {formatTime(lastSaved)}
               </span>
             ) : null}
           </span>

@@ -32,12 +32,14 @@ interface UseDocEditorProps {
 }
 
 const AUTOSAVE_DELAY = 2000; // 2 seconds debounce
+const MAX_RETRY_DELAY = 30000; // 30 seconds max backoff
 
 export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = false }: UseDocEditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Dialog states
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -48,6 +50,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   // Autosave refs
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const titleRef = useRef(title);
+  const retryCountRef = useRef(0);
 
   const editor = useEditor({
     extensions: [
@@ -222,10 +225,31 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     if (!editor || isSaving) return;
 
     setIsSaving(true);
+    setSaveError(null);
+
     try {
       await onSave(titleRef.current, editor.getJSON());
       setIsDirty(false);
       setLastSaved(new Date());
+      retryCountRef.current = 0; // Reset retry count on success
+    } catch (error) {
+      console.error('Save failed:', error);
+      setSaveError('Erreur de sauvegarde');
+
+      // Exponential backoff for retry
+      retryCountRef.current += 1;
+      const backoffDelay = Math.min(
+        AUTOSAVE_DELAY * Math.pow(2, retryCountRef.current),
+        MAX_RETRY_DELAY
+      );
+
+      // Schedule retry
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+      autosaveTimerRef.current = setTimeout(() => {
+        setIsDirty(true); // Trigger retry
+      }, backoffDelay);
     } finally {
       setIsSaving(false);
     }
@@ -306,6 +330,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     isSaving,
     isDirty,
     lastSaved,
+    saveError,
     handleSave,
 
     // Link dialog
