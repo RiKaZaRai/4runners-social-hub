@@ -15,12 +15,12 @@ import type { FolderWithChildren } from '@/lib/actions/documents';
 
 // Sections disponibles pour les dossiers Wiki
 const wikiSections = [
-  { id: 'go-live', label: 'GO-LIVE' },
-  { id: 'urgence', label: 'URGENCE' },
-  { id: 'setup-projet', label: 'SETUP PROJET' },
-  { id: 'client', label: 'CLIENT' },
-  { id: 'outils', label: 'OUTILS' },
-  { id: 'reference', label: 'REFERENCE' },
+  { id: 'go-live', label: 'Go Live' },
+  { id: 'urgence', label: 'Urgence' },
+  { id: 'setup-projet', label: 'Setup projet' },
+  { id: 'client', label: 'Client' },
+  { id: 'outils', label: 'Outils' },
+  { id: 'reference', label: 'References' },
 ];
 
 interface NewFolderDialogProps {

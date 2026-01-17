@@ -79,12 +79,12 @@ export interface WikiIndexItem {
 
 // Navigation sections for sidebar (collapsible categories)
 const navSections = [
-  { id: 'go-live', label: 'GO-LIVE', icon: Workflow },
-  { id: 'urgence', label: 'URGENCE', icon: Sparkles },
-  { id: 'setup-projet', label: 'SETUP PROJET', icon: Boxes },
-  { id: 'client', label: 'CLIENT', icon: User },
-  { id: 'outils', label: 'OUTILS', icon: Library },
-  { id: 'reference', label: 'REFERENCE', icon: BookOpen },
+  { id: 'go-live', label: 'Go Live', icon: Workflow },
+  { id: 'urgence', label: 'Urgence', icon: Sparkles },
+  { id: 'setup-projet', label: 'Setup projet', icon: Boxes },
+  { id: 'client', label: 'Client', icon: User },
+  { id: 'outils', label: 'Outils', icon: Library },
+  { id: 'reference', label: 'References', icon: BookOpen },
 ];
 
 // Build flat index for search
