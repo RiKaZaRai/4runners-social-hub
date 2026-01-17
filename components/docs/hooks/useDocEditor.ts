@@ -228,6 +228,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
         clearTimeout(retryTimerRef.current);
         retryTimerRef.current = null;
       }
+      retryCountRef.current = 0; // Reset backoff on user activity
       setIsDirty(true);
       setLastSaveSkipped(false);
       setSaveError(null);
@@ -307,6 +308,16 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
       // Always unlock - single source of truth
       savingRef.current = false;
       setIsSaving(false);
+
+      // If still dirty after save completes (e.g., user typed during save),
+      // schedule a short debounce to pick up pending changes.
+      // Only if no debounce already pending to avoid spam.
+      if (isDirtyRef.current && !readOnlyRef.current && !debounceTimerRef.current) {
+        debounceTimerRef.current = setTimeout(() => {
+          debounceTimerRef.current = null;
+          if (!readOnlyRef.current && isDirtyRef.current) handleSave();
+        }, 500); // Short delay since user already waited
+      }
     }
   }, [editor, onSave]);
 
@@ -333,17 +344,17 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     };
   }, [isDirty, readOnly, editor, handleSave]);
 
-  // Cleanup retry timer on unmount (debounce timer is cleaned by its own effect)
+  // Cleanup all timers on unmount
   useEffect(() => {
     return () => {
-      if (retryTimerRef.current) {
-        clearTimeout(retryTimerRef.current);
-      }
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
+    retryCountRef.current = 0; // Reset backoff on user activity
     setIsDirty(true);
     setLastSaveSkipped(false);
     setSaveError(null);
