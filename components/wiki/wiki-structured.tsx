@@ -77,13 +77,14 @@ export interface WikiIndexItem {
   updatedAt?: string;
 }
 
-// Navigation items for sidebar
-const navItems = [
-  { id: 'overview', label: "Vue d'ensemble", icon: BookOpen, active: true },
-  { id: 'role', label: 'Par role', icon: User },
-  { id: 'process', label: 'Par process', icon: Workflow },
-  { id: 'module', label: 'Par module', icon: Boxes },
-  { id: 'references', label: 'References', icon: Library },
+// Navigation sections for sidebar (collapsible categories)
+const navSections = [
+  { id: 'go-live', label: 'GO-LIVE', icon: Workflow },
+  { id: 'urgence', label: 'URGENCE', icon: Sparkles },
+  { id: 'setup-projet', label: 'SETUP PROJET', icon: Boxes },
+  { id: 'client', label: 'CLIENT', icon: User },
+  { id: 'outils', label: 'OUTILS', icon: Library },
+  { id: 'reference', label: 'REFERENCE', icon: BookOpen },
 ];
 
 // Build flat index for search
@@ -185,12 +186,14 @@ export function WikiStructured({
 }: WikiStructuredProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [activeNavId, setActiveNavId] = useState('overview');
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
   // Dialog states
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
   const [showNewDocDialog, setShowNewDocDialog] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [folderSection, setFolderSection] = useState<string>('');
 
   // Search state
   const [query, setQuery] = useState('');
@@ -262,20 +265,29 @@ export function WikiStructured({
     }
   };
 
+  // Toggle section expand/collapse
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  };
+
   // Handle new folder
   const handleNewFolder = () => {
     setInputValue('');
+    setFolderSection('');
     setShowNewFolderDialog(true);
   };
 
   const handleCreateFolder = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !folderSection) return;
 
     startTransition(async () => {
       try {
-        await createFolder(tenantId, null, inputValue.trim());
+        // Create folder with section as a tag/prefix in the name
+        const folderName = `[${folderSection.toUpperCase()}] ${inputValue.trim()}`;
+        await createFolder(tenantId, null, folderName);
         setShowNewFolderDialog(false);
         setInputValue('');
+        setFolderSection('');
         router.refresh();
       } catch (error) {
         console.error('Failed to create folder:', error);
@@ -326,58 +338,74 @@ export function WikiStructured({
 
               <Separator className="my-4" />
 
-              <div className="grid gap-2">
-                {navItems.map((it) => {
-                  const Icon = it.icon;
-                  const isActive = activeNavId === it.id;
+              <div className="grid gap-1">
+                {navSections.map((section) => {
+                  const Icon = section.icon;
+                  const isExpanded = expandedSections[section.id];
+                  const isSelected = selectedSection === section.id;
+                  // Filter folders that belong to this section
+                  const sectionFolders = folders.filter((f) =>
+                    f.name.toUpperCase().startsWith(`[${section.id.toUpperCase()}]`) ||
+                    f.name.toUpperCase().includes(section.label)
+                  );
+                  const sectionDocs = documents.filter((d) => {
+                    const folder = folders.find((f) => f.id === d.folderId);
+                    return folder && (
+                      folder.name.toUpperCase().startsWith(`[${section.id.toUpperCase()}]`) ||
+                      folder.name.toUpperCase().includes(section.label)
+                    );
+                  });
+
                   return (
-                    <button
-                      key={it.id}
-                      onClick={() => setActiveNavId(it.id)}
-                      className={cn(
-                        'group flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition',
-                        isActive
-                          ? 'border-primary/30 bg-primary/10'
-                          : 'border-border/60 bg-background/20 hover:bg-background/35'
-                      )}
-                    >
-                      <Icon
+                    <div key={section.id}>
+                      <button
+                        onClick={() => {
+                          toggleSection(section.id);
+                          setSelectedSection(section.id);
+                        }}
                         className={cn(
-                          'h-4 w-4',
-                          isActive
-                            ? 'text-primary'
-                            : 'text-muted-foreground group-hover:text-foreground'
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          'flex-1 font-semibold',
-                          isActive ? 'text-foreground' : 'text-foreground/90'
+                          'group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition',
+                          isSelected
+                            ? 'bg-primary/10 text-primary'
+                            : 'hover:bg-background/35'
                         )}
                       >
-                        {it.label}
-                      </span>
-                      {isActive && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                    </button>
+                        <ChevronRight
+                          className={cn(
+                            'h-4 w-4 text-muted-foreground transition-transform',
+                            isExpanded && 'rotate-90'
+                          )}
+                        />
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        <span className="flex-1 font-semibold">{section.label}</span>
+                        {(sectionFolders.length > 0 || sectionDocs.length > 0) && (
+                          <span className="text-xs text-muted-foreground">
+                            {sectionFolders.length + sectionDocs.length}
+                          </span>
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {sectionFolders.map((folder) => (
+                            <button
+                              key={folder.id}
+                              onClick={() => toggleSection(folder.id)}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-background/35 hover:text-foreground"
+                            >
+                              <Folder className="h-3.5 w-3.5" />
+                              <span className="truncate">{folder.name.replace(/^\[.*?\]\s*/, '')}</span>
+                            </button>
+                          ))}
+                          {sectionFolders.length === 0 && sectionDocs.length === 0 && (
+                            <p className="px-3 py-1.5 text-xs text-muted-foreground">
+                              Aucun contenu
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Badge variant="secondary" className="rounded-full">
-                  <Star className="mr-1 h-3 w-3" /> Populaires
-                </Badge>
-                <Badge variant="secondary" className="rounded-full">
-                  <Clock className="mr-1 h-3 w-3" /> Recents
-                </Badge>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-border/70 bg-card/60 p-4 text-xs text-muted-foreground">
-              <div className="font-semibold text-foreground/90">Conseil UX</div>
-              <div className="mt-1 leading-relaxed">
-                Surfaces opaques pour le contenu. Le look moderne vient des etats (hover/focus/actif)
-                + micro-details.
               </div>
             </div>
           </div>
@@ -703,6 +731,9 @@ export function WikiStructured({
         onInputChange={setInputValue}
         onSubmit={handleCreateFolder}
         isPending={isPending}
+        showSectionPicker
+        selectedSection={folderSection}
+        onSectionChange={setFolderSection}
       />
 
       <NewDocumentDialog

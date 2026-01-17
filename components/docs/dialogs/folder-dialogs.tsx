@@ -9,7 +9,19 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import type { FolderWithChildren } from '@/lib/actions/documents';
+
+// Sections disponibles pour les dossiers Wiki
+const wikiSections = [
+  { id: 'go-live', label: 'GO-LIVE' },
+  { id: 'urgence', label: 'URGENCE' },
+  { id: 'setup-projet', label: 'SETUP PROJET' },
+  { id: 'client', label: 'CLIENT' },
+  { id: 'outils', label: 'OUTILS' },
+  { id: 'reference', label: 'REFERENCE' },
+];
 
 interface NewFolderDialogProps {
   open: boolean;
@@ -18,6 +30,10 @@ interface NewFolderDialogProps {
   onInputChange: (value: string) => void;
   onSubmit: () => void;
   isPending: boolean;
+  // Props optionnels pour Wiki avec sections
+  selectedSection?: string;
+  onSectionChange?: (section: string) => void;
+  showSectionPicker?: boolean;
 }
 
 export function NewFolderDialog({
@@ -26,26 +42,59 @@ export function NewFolderDialog({
   inputValue,
   onInputChange,
   onSubmit,
-  isPending
+  isPending,
+  selectedSection,
+  onSectionChange,
+  showSectionPicker = false
 }: NewFolderDialogProps) {
+  const canSubmit = inputValue.trim() && (!showSectionPicker || selectedSection);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nouveau dossier</DialogTitle>
         </DialogHeader>
-        <Input
-          placeholder="Nom du dossier"
-          value={inputValue}
-          onChange={(e) => onInputChange(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
-          autoFocus
-        />
+
+        {showSectionPicker && onSectionChange && (
+          <div className="space-y-2">
+            <Label>Section</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {wikiSections.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => onSectionChange(section.id)}
+                  className={cn(
+                    'rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors',
+                    selectedSection === section.id
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border hover:bg-muted'
+                  )}
+                >
+                  {section.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label>Nom du dossier</Label>
+          <Input
+            placeholder="Nom du dossier"
+            value={inputValue}
+            onChange={(e) => onInputChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && canSubmit && onSubmit()}
+            autoFocus={!showSectionPicker}
+          />
+        </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={onSubmit} disabled={isPending || !inputValue.trim()}>
+          <Button onClick={onSubmit} disabled={isPending || !canSubmit}>
             Creer
           </Button>
         </DialogFooter>
