@@ -639,11 +639,12 @@ export async function getFoldersAndDocumentsFull(tenantId: string | null) {
   };
 
   // Serialize for client components - must be plain objects, not Prisma references
+  // Use JSON.parse(JSON.stringify()) on content to ensure it's a plain object
   const serializedDocuments: DocumentFull[] = documents.map((d) => ({
     id: d.id,
     title: d.title,
     folderId: d.folderId,
-    content: d.content,
+    content: JSON.parse(JSON.stringify(d.content)),
     updatedAt: d.updatedAt.toISOString(),
     createdBy: d.createdBy ? { name: d.createdBy.name, email: d.createdBy.email } : null
   }));
@@ -677,10 +678,11 @@ export async function getDocument(docId: string) {
   if (!doc) return null;
 
   // Serialize for client components - plain objects only
+  // Use JSON.parse(JSON.stringify()) on content to ensure it's a plain object
   return {
     id: doc.id,
     title: doc.title,
-    content: doc.content,
+    content: JSON.parse(JSON.stringify(doc.content)),
     tenantId: doc.tenantId,
     isPublic: doc.isPublic,
     publicToken: doc.publicToken,
@@ -708,10 +710,11 @@ export async function getPublicDocument(token: string) {
   }
 
   // Serialize for client components
+  // Use JSON.parse(JSON.stringify()) on content to ensure it's a plain object
   return {
     id: doc.id,
     title: doc.title,
-    content: doc.content,
+    content: JSON.parse(JSON.stringify(doc.content)),
     isPublic: doc.isPublic,
     updatedAt: doc.updatedAt.toISOString()
   };
