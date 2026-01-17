@@ -149,7 +149,7 @@ export function DocContentView({
   const readingTime = useMemo(() => estimateReadingTime(content), [content]);
   const ownerName = createdBy?.name || createdBy?.email?.split('@')[0] || 'Inconnu';
 
-  // Single editor using useDocEditor hook - always editable internally
+  // Single editor using useDocEditor hook
   const {
     editor,
     title,
@@ -173,10 +173,11 @@ export function DocContentView({
     initialContent: content,
     initialTitle: initialTitle,
     onSave,
-    readOnly: false, // Always start as editable internally
+    readOnly: !isEditing, // Controls autosave - only saves when editing
   });
 
-  // Toggle editable state when isEditing changes
+  // Sync editor editable state with isEditing
+  // This is needed because useEditor doesn't re-init when props change
   useEffect(() => {
     if (editor) {
       editor.setEditable(isEditing);
