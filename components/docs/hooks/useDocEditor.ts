@@ -220,6 +220,11 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     content: initialContent,
     editable: !readOnly,
     onUpdate: () => {
+      // Cancel any pending retry to avoid saving stale content
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
       setIsDirty(true);
     }
   });
