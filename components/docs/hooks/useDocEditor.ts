@@ -235,6 +235,8 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     setIsSaving(true);
     setSaveError(null);
 
+    let aborted = false;
+
     try {
       const result = await onSave(titleRef.current, editor.getJSON());
       setIsDirty(false);
@@ -242,32 +244,34 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
       setLastSaved(new Date(result.updatedAt));
       retryCountRef.current = 0; // Reset retry count on success
     } catch (error) {
-      // Ignore AbortError (request was cancelled by a newer save)
+      // Check if request was aborted (cancelled by a newer save)
       if (error instanceof DOMException && error.name === 'AbortError') {
-        return;
+        aborted = true;
+        // No error UI, no retry - just unlock and let next save proceed
+      } else {
+        console.error('Save failed:', error);
+        setSaveError('Erreur de sauvegarde');
+
+        // Exponential backoff with jitter for retry
+        retryCountRef.current += 1;
+        const baseDelay = Math.min(
+          AUTOSAVE_DELAY * Math.pow(2, retryCountRef.current),
+          MAX_RETRY_DELAY
+        );
+        // Jitter: 80% to 120% of base delay
+        const jitter = 0.8 + Math.random() * 0.4;
+        const delayWithJitter = baseDelay * jitter;
+
+        // Schedule retry - call handleSave directly
+        if (autosaveTimerRef.current) {
+          clearTimeout(autosaveTimerRef.current);
+        }
+        autosaveTimerRef.current = setTimeout(() => {
+          handleSave();
+        }, delayWithJitter);
       }
-
-      console.error('Save failed:', error);
-      setSaveError('Erreur de sauvegarde');
-
-      // Exponential backoff with jitter for retry
-      retryCountRef.current += 1;
-      const baseDelay = Math.min(
-        AUTOSAVE_DELAY * Math.pow(2, retryCountRef.current),
-        MAX_RETRY_DELAY
-      );
-      // Jitter: 80% to 120% of base delay
-      const jitter = 0.8 + Math.random() * 0.4;
-      const delayWithJitter = baseDelay * jitter;
-
-      // Schedule retry - call handleSave directly
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-      }
-      autosaveTimerRef.current = setTimeout(() => {
-        handleSave();
-      }, delayWithJitter);
     } finally {
+      // Always unlock - single source of truth
       savingRef.current = false;
       setIsSaving(false);
     }
