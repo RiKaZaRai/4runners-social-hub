@@ -90,8 +90,8 @@ export async function POST(
       );
     }
 
-    // Check payload size
-    const contentSize = JSON.stringify(content).length;
+    // Check payload size (bytes, not characters)
+    const contentSize = Buffer.byteLength(JSON.stringify(content), 'utf8');
     if (contentSize > MAX_CONTENT_SIZE) {
       return NextResponse.json(
         { error: 'Content too large' },
