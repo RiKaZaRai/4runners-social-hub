@@ -264,10 +264,12 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
 
     try {
       const result = await onSave(titleRef.current, editor.getJSON());
+      isDirtyRef.current = false; // Sync update before state
       setIsDirty(false);
       // Use server's updatedAt for accurate timestamp
       setLastSaved(new Date(result.updatedAt));
       setLastSaveSkipped(result.skipped);
+      setSaveError(null); // Clear any previous error on success
       retryCountRef.current = 0; // Reset retry count on success
       // Clear any pending retry timer
       if (retryTimerRef.current) {
@@ -277,11 +279,12 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     } catch (error) {
       // Aborted requests (cancelled by a newer save) - no error UI, no retry
       if (error instanceof DOMException && error.name === 'AbortError') {
-        // Clear any pending retry since a newer save will handle it
+        retryCountRef.current = 0; // Reset backoff on abort
         if (retryTimerRef.current) {
           clearTimeout(retryTimerRef.current);
           retryTimerRef.current = null;
         }
+        return; // Exit early - newer save will handle it
       } else {
         console.error('Save failed:', error);
         const message = error instanceof Error ? error.message : 'Erreur de sauvegarde';
@@ -314,8 +317,8 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
 
       // If still dirty after save completes (e.g., user typed during save),
       // schedule a short debounce to pick up pending changes.
-      // Only if no debounce already pending to avoid spam.
-      if (isDirtyRef.current && !readOnlyRef.current && !debounceTimerRef.current) {
+      // Only if no timer already pending to avoid overlap.
+      if (isDirtyRef.current && !readOnlyRef.current && !debounceTimerRef.current && !retryTimerRef.current) {
         debounceTimerRef.current = setTimeout(() => {
           debounceTimerRef.current = null;
           if (!readOnlyRef.current && isDirtyRef.current) handleSave();
