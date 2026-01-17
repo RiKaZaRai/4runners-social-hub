@@ -33,7 +33,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { NewFolderDialog } from '@/components/docs/dialogs/folder-dialogs';
 import { NewDocumentDialog } from '@/components/docs/dialogs/document-dialogs';
-import { createFolder, createDocument } from '@/lib/actions/documents';
+import { createFolder, createDocument, updateDocument } from '@/lib/actions/documents';
 import { cn } from '@/lib/utils';
 import { wikiSections } from '@/lib/wiki-sections';
 import { DocContentView } from '@/components/docs/doc-content-view';
@@ -406,10 +406,19 @@ export function WikiStructured({
     setSelectedDocId(null);
   };
 
-  // Handle edit document
-  const handleEditDocument = () => {
-    if (selectedDocId) {
-      router.push(`${basePath}/${selectedDocId}/edit`);
+  // Handle save document (inline edit)
+  const handleSaveDocument = async (newTitle: string, newContent: JSONContent) => {
+    if (!selectedDocId) {
+      return { ok: false, skipped: true, updatedAt: new Date().toISOString() };
+    }
+
+    try {
+      const result = await updateDocument(selectedDocId, newTitle, newContent);
+      router.refresh();
+      return { ok: true, skipped: false, updatedAt: result.updatedAt };
+    } catch (error) {
+      console.error('Failed to save document:', error);
+      throw error;
     }
   };
 
@@ -735,7 +744,7 @@ export function WikiStructured({
                 createdBy={selectedDoc.createdBy}
                 sectionLabel={docContext.sectionLabel}
                 folderName={docContext.folderName}
-                onEdit={handleEditDocument}
+                onSave={handleSaveDocument}
               />
             ) : (
             <div className="grid gap-5">
