@@ -74,6 +74,10 @@ export function WikiSidebar({
               const sectionFolders = folders.filter((f) =>
                 folderBelongsToSection(f, section.id, section.label)
               );
+              // Check if any folder in this section is expanded (child selected)
+              const hasExpandedFolder = sectionFolders.some((f) => expandedFolders[f.id]);
+              // Section is "fully active" only if expanded AND no folder is selected
+              const isSectionFullyActive = isExpanded && !hasExpandedFolder;
 
               return (
                 <div key={section.id}>
@@ -81,8 +85,8 @@ export function WikiSidebar({
                     onClick={() => toggleSection(section.id)}
                     className={cn(
                       'group flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition',
-                      isExpanded
-                        ? 'border-border/60 bg-background/30'
+                      isSectionFullyActive
+                        ? 'border-border/60 bg-background/40'
                         : 'border-border/60 bg-background/20 hover:bg-background/35'
                     )}
                   >
@@ -94,37 +98,47 @@ export function WikiSidebar({
                           : 'text-muted-foreground group-hover:text-foreground'
                       )}
                     />
-                    <span
-                      className={cn(
-                        'flex-1 font-semibold',
-                        isExpanded ? 'text-foreground' : 'text-foreground/90'
-                      )}
-                    >
+                    <span className="flex-1 font-semibold text-foreground/90">
                       {section.label}
                     </span>
+                    {isSectionFullyActive && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    )}
                   </button>
                   {isExpanded && (
                     <div className="ml-4 mt-2 space-y-1 border-l border-border/50 pl-3">
                       {sectionFolders.map((folder) => {
                         const isFolderExpanded = expandedFolders[folder.id];
                         const folderDocs = documents.filter((d) => d.folderId === folder.id);
+                        // Check if any document in this folder is currently selected
+                        const hasSelectedDoc = folderDocs.some((d) => d.id === currentDocId);
+                        // Folder is "fully active" only if expanded AND no document is selected
+                        const isFolderFullyActive = isFolderExpanded && !hasSelectedDoc;
+
                         return (
                           <div key={folder.id}>
                             <button
                               onClick={() => toggleFolder(folder.id)}
                               className={cn(
-                                'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition',
-                                isFolderExpanded
-                                  ? 'bg-primary/10 text-primary'
-                                  : 'text-muted-foreground hover:bg-background/35 hover:text-foreground'
+                                'flex w-full items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-sm transition',
+                                isFolderFullyActive
+                                  ? 'border-border/60 bg-background/40'
+                                  : isFolderExpanded
+                                    ? 'border-border/60 bg-background/20'
+                                    : 'border-transparent hover:border-border/60 hover:bg-background/35'
                               )}
                             >
-                              <Folder className="h-3.5 w-3.5" />
-                              <span className="truncate">
+                              <Folder
+                                className={cn(
+                                  'h-3.5 w-3.5',
+                                  isFolderExpanded ? 'text-primary' : 'text-muted-foreground'
+                                )}
+                              />
+                              <span className="flex-1 truncate text-foreground/90">
                                 {folder.name.replace(/^\[.*?\]\s*/, '')}
                               </span>
-                              {isFolderExpanded && (
-                                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                              {isFolderFullyActive && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                               )}
                             </button>
                             {isFolderExpanded && folderDocs.length > 0 && (
@@ -136,16 +150,23 @@ export function WikiSidebar({
                                       key={doc.id}
                                       onClick={() => router.push(`${basePath}/${doc.id}`)}
                                       className={cn(
-                                        'flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs transition',
+                                        'flex w-full items-center gap-2 rounded-xl border px-2 py-1 text-left text-xs transition',
                                         isCurrentDoc
-                                          ? 'bg-primary/10 text-primary font-medium'
-                                          : 'text-muted-foreground hover:bg-background/35 hover:text-foreground'
+                                          ? 'border-border/60 bg-background/40'
+                                          : 'border-transparent hover:border-border/60 hover:bg-background/35'
                                       )}
                                     >
-                                      <FileText className="h-3 w-3" />
-                                      <span className="truncate">{doc.title}</span>
+                                      <FileText
+                                        className={cn(
+                                          'h-3 w-3',
+                                          isCurrentDoc ? 'text-primary' : 'text-muted-foreground'
+                                        )}
+                                      />
+                                      <span className="flex-1 truncate text-foreground/90">
+                                        {doc.title}
+                                      </span>
                                       {isCurrentDoc && (
-                                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                                       )}
                                     </button>
                                   );

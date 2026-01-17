@@ -34,8 +34,8 @@ export function NavLink({ href, icon, children, exact = false }: NavLinkProps) {
       className={cn(
         'group flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition',
         isActive
-          ? 'border-border/60 bg-background/30'
-          : 'border-transparent hover:border-border/60 hover:bg-background/20'
+          ? 'border-border/60 bg-background/40'
+          : 'border-border/60 bg-background/20 hover:bg-background/35'
       )}
       href={href}
     >
@@ -45,12 +45,7 @@ export function NavLink({ href, icon, children, exact = false }: NavLinkProps) {
           isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
         )}
       />
-      <span
-        className={cn(
-          'flex-1 font-semibold',
-          isActive ? 'text-foreground' : 'text-foreground/90'
-        )}
-      >
+      <span className="flex-1 font-semibold text-foreground/90">
         {children}
       </span>
       {isActive && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
