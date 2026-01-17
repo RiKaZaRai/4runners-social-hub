@@ -82,7 +82,12 @@ export default async function SpaceDocumentPage({
   // Pour l'agence: récupérer arborescence et versions
   let folders: Awaited<ReturnType<typeof getFoldersAndDocuments>>['folders'] = [];
   let documents: Awaited<ReturnType<typeof getFoldersAndDocuments>>['documents'] = [];
-  let versions: Awaited<ReturnType<typeof getDocumentVersions>> = [];
+  let serializedVersions: Array<{
+    id: string;
+    title: string;
+    createdAt: string;
+    createdBy: { id: string; name: string | null; email: string };
+  }> = [];
 
   if (isAgency) {
     const [data, v] = await Promise.all([
@@ -91,7 +96,10 @@ export default async function SpaceDocumentPage({
     ]);
     folders = data.folders;
     documents = data.documents;
-    versions = v;
+    serializedVersions = v.map((ver) => ({
+      ...ver,
+      createdAt: ver.createdAt.toISOString()
+    }));
   }
 
   // Vue client simplifiée
@@ -131,7 +139,7 @@ export default async function SpaceDocumentPage({
         <div className="border-b px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <VersionHistory versions={versions} currentDocId={docId} />
+              <VersionHistory versions={serializedVersions} currentDocId={docId} />
               <ShareToggle
                 docId={docId}
                 isPublic={doc.isPublic}

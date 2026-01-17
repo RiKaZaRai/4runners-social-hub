@@ -50,6 +50,12 @@ export default async function SpaceDocEditPage({
     redirect(`/spaces/${spaceId}/docs`);
   }
 
+  // Serialize dates for client component
+  const serializedVersions = versions.map((v) => ({
+    ...v,
+    createdAt: v.createdAt.toISOString()
+  }));
+
   return (
     <div className="flex h-full">
       {/* Sidebar arborescence */}
@@ -72,7 +78,7 @@ export default async function SpaceDocEditPage({
           docId={docId}
           initialContent={doc.content as JSONContent}
           initialTitle={doc.title}
-          versions={versions}
+          versions={serializedVersions}
           basePath={`/spaces/${spaceId}/docs`}
         />
       </main>

@@ -16,7 +16,7 @@ import { restoreVersion } from '@/lib/actions/documents';
 interface Version {
   id: string;
   title: string;
-  createdAt: Date;
+  createdAt: string;
   createdBy: {
     id: string;
     name: string | null;
@@ -52,7 +52,7 @@ export function VersionHistory({ versions, currentDocId }: VersionHistoryProps) 
     setShowConfirm(true);
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: string) => {
     return new Intl.DateTimeFormat('fr-FR', {
       day: 'numeric',
       month: 'short',

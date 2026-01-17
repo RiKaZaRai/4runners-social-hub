@@ -11,7 +11,7 @@ import type { JSONContent } from '@tiptap/react';
 interface Version {
   id: string;
   title: string;
-  createdAt: Date;
+  createdAt: string;
   createdBy: {
     id: string;
     name: string | null;
