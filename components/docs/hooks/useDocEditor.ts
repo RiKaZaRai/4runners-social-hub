@@ -301,7 +301,9 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
           clearTimeout(retryTimerRef.current);
         }
         retryTimerRef.current = setTimeout(() => {
-          if (!readOnlyRef.current && isDirtyRef.current) handleSave();
+          if (!readOnlyRef.current && isDirtyRef.current && !debounceTimerRef.current) {
+            handleSave();
+          }
         }, delayWithJitter);
       }
     } finally {
@@ -332,6 +334,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
 
     // Set new timer for autosave
     debounceTimerRef.current = setTimeout(() => {
+      debounceTimerRef.current = null;
       handleSave();
     }, AUTOSAVE_DELAY);
 
