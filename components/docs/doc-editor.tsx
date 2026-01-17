@@ -11,10 +11,16 @@ import { BubbleMenu } from './bubble-menu';
 import { LinkDialog } from './dialogs/link-dialog';
 import { ImageDialog } from './dialogs/image-dialog';
 
+interface SaveResult {
+  ok: boolean;
+  skipped: boolean;
+  updatedAt: string;
+}
+
 interface DocEditorProps {
   initialContent: JSONContent;
   initialTitle: string;
-  onSave: (title: string, content: JSONContent) => Promise<void>;
+  onSave: (title: string, content: JSONContent) => Promise<SaveResult>;
   readOnly?: boolean;
 }
 

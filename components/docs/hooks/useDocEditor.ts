@@ -24,10 +24,16 @@ import tippy, { type Instance as TippyInstance } from 'tippy.js';
 
 const lowlight = createLowlight(common);
 
+interface SaveResult {
+  ok: boolean;
+  skipped: boolean;
+  updatedAt: string;
+}
+
 interface UseDocEditorProps {
   initialContent: JSONContent;
   initialTitle: string;
-  onSave: (title: string, content: JSONContent) => Promise<void>;
+  onSave: (title: string, content: JSONContent) => Promise<SaveResult>;
   readOnly?: boolean;
 }
 
@@ -228,28 +234,32 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     setSaveError(null);
 
     try {
-      await onSave(titleRef.current, editor.getJSON());
+      const result = await onSave(titleRef.current, editor.getJSON());
       setIsDirty(false);
-      setLastSaved(new Date());
+      // Use server's updatedAt for accurate timestamp
+      setLastSaved(new Date(result.updatedAt));
       retryCountRef.current = 0; // Reset retry count on success
     } catch (error) {
       console.error('Save failed:', error);
       setSaveError('Erreur de sauvegarde');
 
-      // Exponential backoff for retry
+      // Exponential backoff with jitter for retry
       retryCountRef.current += 1;
-      const backoffDelay = Math.min(
+      const baseDelay = Math.min(
         AUTOSAVE_DELAY * Math.pow(2, retryCountRef.current),
         MAX_RETRY_DELAY
       );
+      // Jitter: 80% to 120% of base delay
+      const jitter = 0.8 + Math.random() * 0.4;
+      const delayWithJitter = baseDelay * jitter;
 
-      // Schedule retry
+      // Schedule retry - call handleSave directly
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
       }
       autosaveTimerRef.current = setTimeout(() => {
-        setIsDirty(true); // Trigger retry
-      }, backoffDelay);
+        handleSave();
+      }, delayWithJitter);
     } finally {
       setIsSaving(false);
     }

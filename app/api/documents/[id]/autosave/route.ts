@@ -5,8 +5,19 @@ import { requireSession } from '@/lib/auth';
 import { isAgencyRole } from '@/lib/roles';
 import type { Prisma } from '@prisma/client';
 
+// Min interval between version snapshots (60 seconds)
+const MIN_VERSION_INTERVAL_MS = 60 * 1000;
+
+function stableStringify(obj: unknown): string {
+  try {
+    return JSON.stringify(obj, Object.keys(obj as object).sort());
+  } catch {
+    return JSON.stringify(obj);
+  }
+}
+
 function hashContent(content: unknown): string {
-  return createHash('sha256').update(JSON.stringify(content)).digest('hex');
+  return createHash('sha256').update(stableStringify(content)).digest('hex');
 }
 
 async function verifyDocumentAccess(docId: string, userId: string) {
@@ -56,17 +67,18 @@ export async function POST(
     const body = await request.json();
     const { title, content } = body;
 
-    if (!title || !content) {
+    // Validate presence (allow empty strings/objects)
+    if (typeof title !== 'string' || content == null) {
       return NextResponse.json(
         { error: 'Missing title or content' },
         { status: 400 }
       );
     }
 
-    // Récupérer le document actuel
+    // Récupérer le document actuel avec updatedAt
     const currentDoc = await prisma.document.findUnique({
       where: { id: docId },
-      select: { title: true, content: true, tenantId: true }
+      select: { title: true, content: true, tenantId: true, updatedAt: true }
     });
 
     if (!currentDoc) {
@@ -81,38 +93,51 @@ export async function POST(
     const newHash = hashContent({ title: title.trim(), content });
 
     if (currentHash === newHash) {
-      // No changes, return current state without updating
+      // No changes, return actual DB updatedAt
       return NextResponse.json({
         ok: true,
         skipped: true,
-        updatedAt: new Date().toISOString()
+        updatedAt: currentDoc.updatedAt.toISOString()
       });
     }
 
-    // Créer une version snapshot (max 5 versions)
-    const versionCount = await prisma.documentVersion.count({
-      where: { documentId: docId }
+    // Check if we should create a version (min interval guard)
+    const lastVersion = await prisma.documentVersion.findFirst({
+      where: { documentId: docId },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true }
     });
 
-    if (versionCount >= 5) {
-      const oldest = await prisma.documentVersion.findFirst({
-        where: { documentId: docId },
-        orderBy: { createdAt: 'asc' }
+    const shouldCreateVersion =
+      !lastVersion ||
+      Date.now() - lastVersion.createdAt.getTime() > MIN_VERSION_INTERVAL_MS;
+
+    if (shouldCreateVersion) {
+      // Manage version count (max 5 versions)
+      const versionCount = await prisma.documentVersion.count({
+        where: { documentId: docId }
       });
-      if (oldest) {
-        await prisma.documentVersion.delete({ where: { id: oldest.id } });
-      }
-    }
 
-    // Créer la nouvelle version
-    await prisma.documentVersion.create({
-      data: {
-        documentId: docId,
-        title: currentDoc.title,
-        content: currentDoc.content as Prisma.InputJsonValue,
-        createdById: session.userId
+      if (versionCount >= 5) {
+        const oldest = await prisma.documentVersion.findFirst({
+          where: { documentId: docId },
+          orderBy: { createdAt: 'asc' }
+        });
+        if (oldest) {
+          await prisma.documentVersion.delete({ where: { id: oldest.id } });
+        }
       }
-    });
+
+      // Créer la nouvelle version
+      await prisma.documentVersion.create({
+        data: {
+          documentId: docId,
+          title: currentDoc.title,
+          content: currentDoc.content as Prisma.InputJsonValue,
+          createdById: session.userId
+        }
+      });
+    }
 
     // Mettre à jour le document
     const updated = await prisma.document.update({
@@ -126,6 +151,7 @@ export async function POST(
 
     return NextResponse.json({
       ok: true,
+      skipped: false,
       id: updated.id,
       title: updated.title,
       updatedAt: updated.updatedAt.toISOString()

@@ -46,6 +46,8 @@ export function DocEditorWrapper({
     if (!response.ok) {
       throw new Error('Failed to save document');
     }
+
+    return response.json();
   };
 
   return (
