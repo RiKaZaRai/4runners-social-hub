@@ -229,6 +229,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
         retryTimerRef.current = null;
       }
       retryCountRef.current = 0; // Reset backoff on user activity
+      isDirtyRef.current = true; // Sync update before state
       setIsDirty(true);
       setLastSaveSkipped(false);
       setSaveError(null);
@@ -363,6 +364,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     }
     setTitle(e.target.value);
     retryCountRef.current = 0; // Reset backoff on user activity
+    isDirtyRef.current = true; // Sync update before state
     setIsDirty(true);
     setLastSaveSkipped(false);
     setSaveError(null);
