@@ -49,17 +49,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
           <nav className="flex-1 space-y-6 px-4 py-5 text-sm">
             {/* Menu principal - usage quotidien uniquement */}
-            <div className="space-y-1">
-              <NavLink href="/home" icon="home">
-                Accueil
-              </NavLink>
-              <NavLink href="/inbox" icon="inbox">
-                Inbox
-              </NavLink>
-              <NavLink href={isClient ? '/posts' : '/spaces'} icon="building">
-                Espaces
-              </NavLink>
-              {!isClient && <WikiNavLink />}
+            <div className="rounded-2xl border border-border/70 bg-card/70 p-3 shadow-sm">
+              <div className="grid gap-1">
+                <NavLink href="/home" icon="home">
+                  Accueil
+                </NavLink>
+                <NavLink href="/inbox" icon="inbox">
+                  Inbox
+                </NavLink>
+                <NavLink href={isClient ? '/posts' : '/spaces'} icon="building">
+                  Espaces
+                </NavLink>
+                {!isClient && <WikiNavLink />}
+              </div>
             </div>
 
             {/* Section Espaces */}
