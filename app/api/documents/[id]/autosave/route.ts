@@ -74,7 +74,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: docId } = await params;
+    const docId = (await params).id;
     const session = await requireSession();
     await verifyDocumentAccess(docId, session.userId);
 
