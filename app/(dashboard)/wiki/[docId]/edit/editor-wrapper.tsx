@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DocEditor } from '@/components/docs/doc-editor';
 import { VersionHistory } from '@/components/docs/version-history';
@@ -36,6 +36,11 @@ export function DocEditorWrapper({
 }: DocEditorWrapperProps) {
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
 
   const handleSave = async (title: string, content: JSONContent) => {
     // Abort any in-flight request (latest wins)

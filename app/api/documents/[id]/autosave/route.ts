@@ -7,6 +7,8 @@ import type { Prisma } from '@prisma/client';
 
 // Min interval between version snapshots (60 seconds)
 const MIN_VERSION_INTERVAL_MS = 60 * 1000;
+// Max content size (2 MB)
+const MAX_CONTENT_SIZE = 2 * 1024 * 1024;
 
 function stableStringify(value: unknown): string {
   const seen = new WeakSet<object>();
@@ -85,6 +87,15 @@ export async function POST(
       return NextResponse.json(
         { error: 'Missing title or content' },
         { status: 400 }
+      );
+    }
+
+    // Check payload size
+    const contentSize = JSON.stringify(content).length;
+    if (contentSize > MAX_CONTENT_SIZE) {
+      return NextResponse.json(
+        { error: 'Content too large' },
+        { status: 413 }
       );
     }
 
