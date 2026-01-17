@@ -5,7 +5,7 @@ import { Search, FolderPlus, FilePlus, FileText, Folder, CornerDownLeft } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { WikiIndexItem } from './wiki-data';
+import type { WikiIndexItem } from './wiki-structured';
 
 interface WikiTopbarProps {
   index: WikiIndexItem[];
@@ -90,7 +90,7 @@ export function WikiTopbar({ index, onOpen, onNewFolder, onNewDocument }: WikiTo
           </div>
           <div>
             <div className="text-sm font-semibold">Wiki</div>
-            <div className="text-xs text-muted-foreground">Structuré (rôle / process / module)</div>
+            <div className="text-xs text-muted-foreground">Base de connaissances</div>
           </div>
         </div>
 
@@ -106,7 +106,7 @@ export function WikiTopbar({ index, onOpen, onNewFolder, onNewDocument }: WikiTo
             }}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Rechercher dans le wiki (rôle, process, module...)"
+            placeholder="Rechercher un document..."
             className="pl-9"
             aria-label="Rechercher dans le wiki"
             aria-expanded={isOpen && results.length > 0}

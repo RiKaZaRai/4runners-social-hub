@@ -3,7 +3,7 @@
 import { Home, Folder, FolderOpen, FileText, ChevronRight, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { WikiSection, WikiNode } from './wiki-data';
+import type { WikiSection, WikiTreeNode } from './wiki-structured';
 
 interface WikiSidebarTreeProps {
   sections: WikiSection[];
@@ -22,13 +22,15 @@ export function WikiSidebarTree({
   onExpandAll,
   onSelect
 }: WikiSidebarTreeProps) {
+  const hasContent = sections.length > 0 && sections.some((s) => s.nodes.length > 0);
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-card">
       {/* Header */}
       <div className="border-b p-4">
         <div className="text-sm font-semibold">Navigation Wiki</div>
         <div className="mt-1 text-xs text-muted-foreground">
-          Entrées multiples : rôle / process / module
+          Parcourez vos documents et dossiers
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
@@ -39,10 +41,12 @@ export function WikiSidebarTree({
             <Home className="mr-1 h-3 w-3" />
             Accueil
           </Button>
-          <Button variant="outline" size="sm" onClick={onExpandAll}>
-            <ChevronsUpDown className="mr-1 h-3 w-3" />
-            Tout déplier
-          </Button>
+          {hasContent && (
+            <Button variant="outline" size="sm" onClick={onExpandAll}>
+              <ChevronsUpDown className="mr-1 h-3 w-3" />
+              Tout déplier
+            </Button>
+          )}
         </div>
       </div>
 
@@ -58,6 +62,12 @@ export function WikiSidebarTree({
             onSelect={onSelect}
           />
         ))}
+
+        {!hasContent && (
+          <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+            Aucun document. Créez votre premier document.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -73,6 +83,9 @@ interface SectionItemProps {
 
 function SectionItem({ section, activeId, openMap, onToggleOpen, onSelect }: SectionItemProps) {
   const isOpen = !!openMap[section.id];
+  const hasNodes = section.nodes.length > 0;
+
+  if (!hasNodes) return null;
 
   return (
     <div className="mb-2">
@@ -111,7 +124,7 @@ function SectionItem({ section, activeId, openMap, onToggleOpen, onSelect }: Sec
 }
 
 interface TreeNodeProps {
-  node: WikiNode;
+  node: WikiTreeNode;
   level: number;
   activeId: string;
   openMap: Record<string, boolean>;
