@@ -638,14 +638,14 @@ export async function getFoldersAndDocumentsFull(tenantId: string | null) {
       }));
   };
 
-  // Serialize dates for client components
+  // Serialize for client components - must be plain objects, not Prisma references
   const serializedDocuments: DocumentFull[] = documents.map((d) => ({
     id: d.id,
     title: d.title,
     folderId: d.folderId,
     content: d.content,
     updatedAt: d.updatedAt.toISOString(),
-    createdBy: d.createdBy
+    createdBy: d.createdBy ? { name: d.createdBy.name, email: d.createdBy.email } : null
   }));
 
   return {
