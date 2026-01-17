@@ -68,11 +68,12 @@ export function DocEditorWrapper({
       throw new Error(message);
     }
 
-    return response.json() as Promise<{
+    const data = (await response.json()) as {
       ok: boolean;
       skipped: boolean;
       updatedAt: string;
-    }>;
+    };
+    return data;
   };
 
   return (

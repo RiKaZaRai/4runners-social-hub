@@ -61,6 +61,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   const retryCountRef = useRef(0);
   const savingRef = useRef(false); // Synchronous lock to prevent race conditions
   const readOnlyRef = useRef(readOnly);
+  const isDirtyRef = useRef(isDirty);
 
   const editor = useEditor({
     extensions: [
@@ -242,6 +243,10 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     readOnlyRef.current = readOnly;
   }, [readOnly]);
 
+  useEffect(() => {
+    isDirtyRef.current = isDirty;
+  }, [isDirty]);
+
   const handleSave = useCallback(async () => {
     if (!editor || savingRef.current) return;
 
@@ -295,7 +300,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
           clearTimeout(retryTimerRef.current);
         }
         retryTimerRef.current = setTimeout(() => {
-          if (!readOnlyRef.current) handleSave();
+          if (!readOnlyRef.current && isDirtyRef.current) handleSave();
         }, delayWithJitter);
       }
     } finally {
