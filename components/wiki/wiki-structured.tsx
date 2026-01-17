@@ -19,6 +19,7 @@ import {
   CornerDownLeft,
   Folder,
   Map,
+  Home,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -179,6 +180,24 @@ function estimateReadingTime(): number {
   return Math.floor(Math.random() * 3) + 4;
 }
 
+// Helper to check if a folder belongs to a section
+function folderBelongsToSection(folder: FolderWithChildren, sectionId: string, sectionLabel: string): boolean {
+  return (
+    folder.name.toUpperCase().startsWith(`[${sectionId.toUpperCase()}]`) ||
+    folder.name.toUpperCase().includes(sectionLabel.toUpperCase())
+  );
+}
+
+// Helper to get section for a folder
+function getFolderSection(folder: FolderWithChildren): { id: string; label: string } | null {
+  for (const section of navSections) {
+    if (folderBelongsToSection(folder, section.id, section.label)) {
+      return { id: section.id, label: section.label };
+    }
+  }
+  return null;
+}
+
 export function WikiStructured({
   folders,
   documents,
@@ -189,6 +208,7 @@ export function WikiStructured({
   const [isPending, startTransition] = useTransition();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   // Dialog states
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
@@ -204,24 +224,78 @@ export function WikiStructured({
   // Build flat index for search
   const index = useMemo(() => buildWikiIndex(folders, documents), [folders, documents]);
 
-  // Recent documents (last 3 updated)
+  // Get current selected folder object
+  const selectedFolder = useMemo(() => {
+    if (!selectedFolderId) return null;
+    return folders.find((f) => f.id === selectedFolderId) || null;
+  }, [selectedFolderId, folders]);
+
+  // Get current section object
+  const currentSectionObj = useMemo(() => {
+    if (selectedSection) {
+      return navSections.find((s) => s.id === selectedSection) || null;
+    }
+    return null;
+  }, [selectedSection]);
+
+  // Filter folders and documents based on current context
+  const contextFolders = useMemo(() => {
+    if (selectedFolderId) {
+      // If a folder is selected, show its children (subfolders)
+      const folder = folders.find((f) => f.id === selectedFolderId);
+      return folder?.children || [];
+    }
+    if (selectedSection && currentSectionObj) {
+      // If a section is selected, show folders belonging to that section
+      return folders.filter((f) => folderBelongsToSection(f, currentSectionObj.id, currentSectionObj.label));
+    }
+    // No selection = all folders
+    return folders;
+  }, [selectedFolderId, selectedSection, currentSectionObj, folders]);
+
+  const contextDocuments = useMemo(() => {
+    if (selectedFolderId) {
+      // If a folder is selected, show documents in that folder
+      return documents.filter((d) => d.folderId === selectedFolderId);
+    }
+    if (selectedSection && currentSectionObj) {
+      // If a section is selected, show documents in folders of that section
+      const sectionFolderIds = folders
+        .filter((f) => folderBelongsToSection(f, currentSectionObj.id, currentSectionObj.label))
+        .map((f) => f.id);
+      return documents.filter((d) => d.folderId && sectionFolderIds.includes(d.folderId));
+    }
+    // No selection = all documents
+    return documents;
+  }, [selectedFolderId, selectedSection, currentSectionObj, folders, documents]);
+
+  // Recent documents (last 3 updated) - filtered by context
   const recentDocs = useMemo(() => {
-    return [...documents]
+    return [...contextDocuments]
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 3);
-  }, [documents]);
+  }, [contextDocuments]);
 
-  // Popular documents (just pick first 3 for now)
+  // Popular documents (just pick first 3 for now) - filtered by context
   const popularDocs = useMemo(() => {
-    return documents.slice(0, 3);
-  }, [documents]);
+    return contextDocuments.slice(0, 3);
+  }, [contextDocuments]);
 
-  // All docs for table
+  // All docs for table - filtered by context
   const allDocs = useMemo(() => {
-    return [...documents].sort(
+    return [...contextDocuments].sort(
       (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
-  }, [documents]);
+  }, [contextDocuments]);
+
+  // Last update date in current context
+  const lastUpdateDate = useMemo(() => {
+    if (contextDocuments.length === 0) return null;
+    const sorted = [...contextDocuments].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+    return sorted[0]?.updatedAt || null;
+  }, [contextDocuments]);
 
   // Search results
   const searchResults = query.trim()
@@ -269,6 +343,30 @@ export function WikiStructured({
   // Toggle section expand/collapse
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  };
+
+  // Handle section click
+  const handleSectionClick = (sectionId: string) => {
+    toggleSection(sectionId);
+    setSelectedSection(sectionId);
+    setSelectedFolderId(null); // Clear folder selection when selecting a section
+  };
+
+  // Handle folder click
+  const handleFolderClick = (folderId: string, sectionId: string) => {
+    setSelectedFolderId(folderId);
+    setSelectedSection(sectionId); // Keep section context
+  };
+
+  // Navigate back to overview
+  const handleBackToOverview = () => {
+    setSelectedSection(null);
+    setSelectedFolderId(null);
+  };
+
+  // Navigate back to section
+  const handleBackToSection = () => {
+    setSelectedFolderId(null);
   };
 
   // Handle new folder
@@ -343,38 +441,29 @@ export function WikiStructured({
                 {navSections.map((section) => {
                   const Icon = section.icon;
                   const isExpanded = expandedSections[section.id];
-                  const isSelected = selectedSection === section.id;
+                  const isSectionSelected = selectedSection === section.id && !selectedFolderId;
                   // Filter folders that belong to this section
                   const sectionFolders = folders.filter((f) =>
-                    f.name.toUpperCase().startsWith(`[${section.id.toUpperCase()}]`) ||
-                    f.name.toUpperCase().includes(section.label)
+                    folderBelongsToSection(f, section.id, section.label)
                   );
-                  const sectionDocs = documents.filter((d) => {
-                    const folder = folders.find((f) => f.id === d.folderId);
-                    return folder && (
-                      folder.name.toUpperCase().startsWith(`[${section.id.toUpperCase()}]`) ||
-                      folder.name.toUpperCase().includes(section.label)
-                    );
-                  });
 
                   return (
                     <div key={section.id}>
                       <button
-                        onClick={() => {
-                          toggleSection(section.id);
-                          setSelectedSection(section.id);
-                        }}
+                        onClick={() => handleSectionClick(section.id)}
                         className={cn(
                           'group flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition',
-                          isSelected
+                          isSectionSelected
                             ? 'border-primary/30 bg-primary/10'
-                            : 'border-border/60 bg-background/20 hover:bg-background/35'
+                            : selectedSection === section.id
+                              ? 'border-border/60 bg-background/30'
+                              : 'border-border/60 bg-background/20 hover:bg-background/35'
                         )}
                       >
                         <Icon
                           className={cn(
                             'h-4 w-4',
-                            isSelected
+                            isSectionSelected || selectedSection === section.id
                               ? 'text-primary'
                               : 'text-muted-foreground group-hover:text-foreground'
                           )}
@@ -382,28 +471,37 @@ export function WikiStructured({
                         <span
                           className={cn(
                             'flex-1 font-semibold',
-                            isSelected ? 'text-foreground' : 'text-foreground/90'
+                            isSectionSelected || selectedSection === section.id ? 'text-foreground' : 'text-foreground/90'
                           )}
                         >
                           {section.label}
                         </span>
-                        {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                        {isSectionSelected && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
                       </button>
                       {isExpanded && (
                         <div className="ml-4 mt-2 space-y-1 border-l border-border/50 pl-3">
-                          {sectionFolders.map((folder) => (
-                            <button
-                              key={folder.id}
-                              onClick={() => toggleSection(folder.id)}
-                              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-background/35 hover:text-foreground"
-                            >
-                              <Folder className="h-3.5 w-3.5" />
-                              <span className="truncate">{folder.name.replace(/^\[.*?\]\s*/, '')}</span>
-                            </button>
-                          ))}
-                          {sectionFolders.length === 0 && sectionDocs.length === 0 && (
+                          {sectionFolders.map((folder) => {
+                            const isFolderSelected = selectedFolderId === folder.id;
+                            return (
+                              <button
+                                key={folder.id}
+                                onClick={() => handleFolderClick(folder.id, section.id)}
+                                className={cn(
+                                  'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition',
+                                  isFolderSelected
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'text-muted-foreground hover:bg-background/35 hover:text-foreground'
+                                )}
+                              >
+                                <Folder className="h-3.5 w-3.5" />
+                                <span className="truncate">{folder.name.replace(/^\[.*?\]\s*/, '')}</span>
+                                {isFolderSelected && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+                              </button>
+                            );
+                          })}
+                          {sectionFolders.length === 0 && (
                             <p className="px-2 py-1.5 text-xs text-muted-foreground">
-                              Aucun contenu
+                              Aucun dossier
                             </p>
                           )}
                         </div>
@@ -509,9 +607,43 @@ export function WikiStructured({
             {/* Breadcrumbs */}
             <div className="px-4 pb-3">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground/85">Wiki</span>
-                <ChevronRight className="h-3.5 w-3.5" />
-                <span>Vue d&apos;ensemble</span>
+                <button
+                  onClick={handleBackToOverview}
+                  className={cn(
+                    'font-semibold transition hover:text-foreground',
+                    !selectedSection ? 'text-foreground' : 'text-foreground/85'
+                  )}
+                >
+                  Wiki
+                </button>
+                {currentSectionObj && (
+                  <>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                    <button
+                      onClick={handleBackToSection}
+                      className={cn(
+                        'transition hover:text-foreground',
+                        !selectedFolderId ? 'font-semibold text-foreground' : ''
+                      )}
+                    >
+                      {currentSectionObj.label}
+                    </button>
+                  </>
+                )}
+                {selectedFolder && (
+                  <>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                    <span className="font-semibold text-foreground">
+                      {selectedFolder.name.replace(/^\[.*?\]\s*/, '')}
+                    </span>
+                  </>
+                )}
+                {!selectedSection && !selectedFolderId && (
+                  <>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                    <span>Vue d&apos;ensemble</span>
+                  </>
+                )}
               </div>
             </div>
           </header>
@@ -521,17 +653,14 @@ export function WikiStructured({
             <div className="grid gap-5">
               {/* KPI badges */}
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="rounded-full bg-primary/15 text-primary hover:bg-primary/15">
-                  Actif
+                <Badge variant="secondary" className="rounded-full">
+                  {contextDocuments.length} doc{contextDocuments.length !== 1 ? 's' : ''}
                 </Badge>
                 <Badge variant="secondary" className="rounded-full">
-                  {documents.length} docs
+                  {contextFolders.length} dossier{contextFolders.length !== 1 ? 's' : ''}
                 </Badge>
                 <Badge variant="secondary" className="rounded-full">
-                  {folders.length} dossiers
-                </Badge>
-                <Badge variant="secondary" className="rounded-full">
-                  Derniere maj: {recentDocs[0] ? formatRelativeTime(recentDocs[0].updatedAt) : 'N/A'}
+                  Derniere maj: {lastUpdateDate ? formatRelativeTime(lastUpdateDate) : 'N/A'}
                 </Badge>
               </div>
 
