@@ -32,13 +32,28 @@ export function NavLink({ href, icon, children, exact = false }: NavLinkProps) {
   return (
     <Link
       className={cn(
-        'flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted',
-        isActive && 'bg-primary/10 text-primary'
+        'group flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition',
+        isActive
+          ? 'border-border/60 bg-background/30'
+          : 'border-transparent hover:border-border/60 hover:bg-background/20'
       )}
       href={href}
     >
-      <Icon className="h-4 w-4" />
-      {children}
+      <Icon
+        className={cn(
+          'h-4 w-4',
+          isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+        )}
+      />
+      <span
+        className={cn(
+          'flex-1 font-semibold',
+          isActive ? 'text-foreground' : 'text-foreground/90'
+        )}
+      >
+        {children}
+      </span>
+      {isActive && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
     </Link>
   );
 }
