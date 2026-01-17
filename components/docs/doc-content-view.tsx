@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 const lowlight = createLowlight(common);
@@ -244,48 +245,59 @@ export function DocContentView({
     <div className="flex gap-5">
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        {/* Section · Folder label */}
-        <div className="mb-2 text-sm text-muted-foreground">
-          {sectionLabel} · {folderName}
-        </div>
+        {/* Header block */}
+        <div className="mb-4">
+          {/* Section · Folder label */}
+          <div className="mb-2 text-sm text-muted-foreground">
+            {sectionLabel} · {folderName}
+          </div>
 
-        {/* Title */}
-        <h1 className="mb-4 text-3xl font-bold">{title}</h1>
+          {/* Title */}
+          <h1 className="mb-4 text-3xl font-bold">{title}</h1>
 
-        {/* Metadata badges */}
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <Badge variant="secondary" className="rounded-full">
-            Owner: {ownerName}
-          </Badge>
-          <Badge variant="secondary" className="rounded-full">
-            Maj: {formatRelativeTime(updatedAt)}
-          </Badge>
-          <Badge variant="secondary" className="rounded-full">
-            Lecture: {readingTime} min
-          </Badge>
-          <div className="ml-auto">
-            <Button onClick={onEdit} className="rounded-xl">
-              <Pencil className="mr-2 h-4 w-4" />
-              Editer
-            </Button>
+          {/* Metadata badges + Edit button */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge variant="secondary" className="rounded-full">
+              Owner: {ownerName}
+            </Badge>
+            <Badge variant="secondary" className="rounded-full">
+              Maj: {formatRelativeTime(updatedAt)}
+            </Badge>
+            <Badge variant="secondary" className="rounded-full">
+              Lecture: {readingTime} min
+            </Badge>
+            <div className="ml-auto flex items-center">
+              <Button onClick={onEdit} className="rounded-xl">
+                <Pencil className="mr-2 h-4 w-4" />
+                Editer
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Document content */}
-        <article className="prose prose-sm max-w-none dark:prose-invert prose-headings:scroll-mt-20">
-          <EditorContent editor={editor} />
-        </article>
+        {/* Separator */}
+        <Separator className="mb-4" />
+
+        {/* Content block with border */}
+        <Card className="rounded-2xl">
+          <CardContent className="p-6">
+            <article className="prose prose-sm max-w-none dark:prose-invert prose-headings:scroll-mt-20">
+              <EditorContent editor={editor} />
+            </article>
+          </CardContent>
+        </Card>
       </div>
 
       {/* TOC Sidebar */}
       <aside className="hidden w-64 shrink-0 lg:block">
         <div className="sticky top-0">
           <Card className="rounded-2xl border-border/70 bg-card/80">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold">Sommaire</CardTitle>
               <p className="text-xs text-muted-foreground">Navigation rapide</p>
             </CardHeader>
-            <CardContent>
+            <Separator className="mx-4 mb-2" />
+            <CardContent className="pt-0">
               <ScrollArea className="max-h-[calc(100vh-300px)]">
                 <nav className="space-y-1">
                   {toc.length > 0 ? (
