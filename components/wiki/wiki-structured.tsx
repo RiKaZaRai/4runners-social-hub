@@ -13,7 +13,7 @@ import {
   ChevronRight,
   BookOpen,
   User,
-  Workflow,
+  Rocket,
   Boxes,
   Library,
   CornerDownLeft,
@@ -79,7 +79,7 @@ export interface WikiIndexItem {
 
 // Navigation sections for sidebar (collapsible categories)
 const navSections = [
-  { id: 'go-live', label: 'Go Live', icon: Workflow },
+  { id: 'go-live', label: 'Go Live', icon: Rocket },
   { id: 'urgence', label: 'Urgence', icon: Sparkles },
   { id: 'setup-projet', label: 'Setup projet', icon: Boxes },
   { id: 'client', label: 'Client', icon: User },
