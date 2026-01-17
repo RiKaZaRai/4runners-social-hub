@@ -246,6 +246,11 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
       // Use server's updatedAt for accurate timestamp
       setLastSaved(new Date(result.updatedAt));
       retryCountRef.current = 0; // Reset retry count on success
+      // Clear any pending retry timer
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
     } catch (error) {
       // Aborted requests (cancelled by a newer save) - no error UI, no retry
       if (error instanceof DOMException && error.name === 'AbortError') {
