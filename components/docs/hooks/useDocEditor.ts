@@ -53,8 +53,9 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
 
-  // Autosave refs
-  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Autosave refs - separate timers for debounce and retry
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
   const titleRef = useRef(title);
   const retryCountRef = useRef(0);
   const savingRef = useRef(false); // Synchronous lock to prevent race conditions
@@ -221,9 +222,9 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     editable: !readOnly,
     onUpdate: () => {
       // Cancel any pending retry to avoid saving stale content
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-        autosaveTimerRef.current = null;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
       }
       setIsDirty(true);
     }
@@ -252,9 +253,9 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
       setLastSaved(new Date(result.updatedAt));
       retryCountRef.current = 0; // Reset retry count on success
       // Clear any pending retry timer
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-        autosaveTimerRef.current = null;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
       }
     } catch (error) {
       // Aborted requests (cancelled by a newer save) - no error UI, no retry
@@ -275,10 +276,10 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
         const delayWithJitter = baseDelay * jitter;
 
         // Schedule retry (skip if readOnly changed)
-        if (autosaveTimerRef.current) {
-          clearTimeout(autosaveTimerRef.current);
+        if (retryTimerRef.current) {
+          clearTimeout(retryTimerRef.current);
         }
-        autosaveTimerRef.current = setTimeout(() => {
+        retryTimerRef.current = setTimeout(() => {
           if (!readOnlyRef.current) handleSave();
         }, delayWithJitter);
       }
@@ -289,33 +290,36 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     }
   }, [editor, onSave]);
 
-  // Autosave effect
+  // Autosave effect (debounce)
   useEffect(() => {
     if (readOnly || !isDirty || !editor) return;
 
-    // Clear existing timer
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
+    // Clear existing debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
 
     // Set new timer for autosave
-    autosaveTimerRef.current = setTimeout(() => {
+    debounceTimerRef.current = setTimeout(() => {
       handleSave();
     }, AUTOSAVE_DELAY);
 
     // Cleanup on unmount or when dependencies change
     return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
     };
   }, [isDirty, readOnly, editor, handleSave]);
 
-  // Cleanup timers on unmount
+  // Cleanup all timers on unmount
   useEffect(() => {
     return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
       }
     };
   }, []);
