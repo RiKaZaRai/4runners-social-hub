@@ -33,7 +33,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { NewFolderDialog } from '@/components/docs/dialogs/folder-dialogs';
 import { NewDocumentDialog } from '@/components/docs/dialogs/document-dialogs';
-import { createFolder, createDocument, updateDocument } from '@/lib/actions/documents';
+import { createFolder, createDocument } from '@/lib/actions/documents';
 import { cn } from '@/lib/utils';
 import { wikiSections } from '@/lib/wiki-sections';
 import { DocContentView } from '@/components/docs/doc-content-view';
@@ -406,20 +406,41 @@ export function WikiStructured({
     setSelectedDocId(null);
   };
 
-  // Handle save document (inline edit)
+  // Handle save document (inline edit) - use fetch API to avoid server action issues
   const handleSaveDocument = async (newTitle: string, newContent: JSONContent) => {
     if (!selectedDocId) {
       return { ok: false, skipped: true, updatedAt: new Date().toISOString() };
     }
 
-    try {
-      const result = await updateDocument(selectedDocId, newTitle, newContent);
-      router.refresh();
-      return { ok: true, skipped: false, updatedAt: result.updatedAt };
-    } catch (error) {
-      console.error('Failed to save document:', error);
-      throw error;
+    const response = await fetch(`/api/documents/${selectedDocId}/autosave`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTitle, content: newContent })
+    });
+
+    if (!response.ok) {
+      let message = 'Erreur de sauvegarde';
+      try {
+        const data = await response.json();
+        if (typeof data?.error === 'string') message = data.error;
+      } catch {
+        // Keep default message
+      }
+      throw new Error(message);
     }
+
+    const data = (await response.json()) as {
+      ok: boolean;
+      skipped: boolean;
+      updatedAt: string;
+    };
+
+    // Only refresh if content actually changed
+    if (!data.skipped) {
+      router.refresh();
+    }
+
+    return data;
   };
 
   // Handle new folder
