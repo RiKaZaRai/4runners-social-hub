@@ -338,7 +338,7 @@ export function WikiStructured({
 
               <Separator className="my-4" />
 
-              <div className="grid gap-1">
+              <div className="grid gap-2">
                 {navSections.map((section) => {
                   const Icon = section.icon;
                   const isExpanded = expandedSections[section.id];
@@ -364,40 +364,44 @@ export function WikiStructured({
                           setSelectedSection(section.id);
                         }}
                         className={cn(
-                          'group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition',
+                          'group flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition',
                           isSelected
-                            ? 'bg-primary/10 text-primary'
-                            : 'hover:bg-background/35'
+                            ? 'border-primary/30 bg-primary/10'
+                            : 'border-border/60 bg-background/20 hover:bg-background/35'
                         )}
                       >
-                        <ChevronRight
+                        <Icon
                           className={cn(
-                            'h-4 w-4 text-muted-foreground transition-transform',
-                            isExpanded && 'rotate-90'
+                            'h-4 w-4',
+                            isSelected
+                              ? 'text-primary'
+                              : 'text-muted-foreground group-hover:text-foreground'
                           )}
                         />
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                        <span className="flex-1 font-semibold">{section.label}</span>
-                        {(sectionFolders.length > 0 || sectionDocs.length > 0) && (
-                          <span className="text-xs text-muted-foreground">
-                            {sectionFolders.length + sectionDocs.length}
-                          </span>
-                        )}
+                        <span
+                          className={cn(
+                            'flex-1 font-semibold',
+                            isSelected ? 'text-foreground' : 'text-foreground/90'
+                          )}
+                        >
+                          {section.label}
+                        </span>
+                        {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
                       </button>
                       {isExpanded && (
-                        <div className="ml-6 mt-1 space-y-1">
+                        <div className="ml-4 mt-2 space-y-1 border-l border-border/50 pl-3">
                           {sectionFolders.map((folder) => (
                             <button
                               key={folder.id}
                               onClick={() => toggleSection(folder.id)}
-                              className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-background/35 hover:text-foreground"
+                              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-background/35 hover:text-foreground"
                             >
                               <Folder className="h-3.5 w-3.5" />
                               <span className="truncate">{folder.name.replace(/^\[.*?\]\s*/, '')}</span>
                             </button>
                           ))}
                           {sectionFolders.length === 0 && sectionDocs.length === 0 && (
-                            <p className="px-3 py-1.5 text-xs text-muted-foreground">
+                            <p className="px-2 py-1.5 text-xs text-muted-foreground">
                               Aucun contenu
                             </p>
                           )}
