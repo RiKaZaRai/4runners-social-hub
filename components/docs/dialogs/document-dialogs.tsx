@@ -1,5 +1,6 @@
 'use client';
 
+import { Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,17 +12,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { wikiSections } from '@/lib/wiki-sections';
 import type { FolderWithChildren } from '@/lib/actions/documents';
-
-// Sections disponibles pour les documents Wiki
-const wikiSections = [
-  { id: 'go-live', label: 'Go Live' },
-  { id: 'urgence', label: 'Urgence' },
-  { id: 'setup-projet', label: 'Setup projet' },
-  { id: 'client', label: 'Client' },
-  { id: 'outils', label: 'Outils' },
-  { id: 'reference', label: 'References' }
-];
 
 interface NewDocumentDialogProps {
   open: boolean;
@@ -84,25 +76,36 @@ export function NewDocumentDialog({
           <div className="space-y-2">
             <Label>Section</Label>
             <div className="grid grid-cols-2 gap-2">
-              {wikiSections.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => {
-                    onSectionChange(section.id);
-                    // Reset folder selection when changing section
-                    onFolderChange?.(null);
-                  }}
-                  className={cn(
-                    'rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors',
-                    selectedSection === section.id
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border hover:bg-muted'
-                  )}
-                >
-                  {section.label}
-                </button>
-              ))}
+              {wikiSections.map((section) => {
+                const Icon = section.icon;
+                const isSelected = selectedSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => {
+                      onSectionChange(section.id);
+                      // Reset folder selection when changing section
+                      onFolderChange?.(null);
+                    }}
+                    className={cn(
+                      'group flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium transition-colors',
+                      isSelected
+                        ? 'border-primary/30 bg-primary/10 text-primary'
+                        : 'border-border hover:bg-muted'
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        'h-4 w-4',
+                        isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                      )}
+                    />
+                    <span className="flex-1">{section.label}</span>
+                    {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -110,34 +113,40 @@ export function NewDocumentDialog({
         {showSectionPicker && selectedSection && sectionFolders.length > 0 && onFolderChange && (
           <div className="space-y-2">
             <Label>Dossier (optionnel)</Label>
-            <div className="grid gap-1 max-h-40 overflow-y-auto rounded-lg border border-border p-2">
+            <div className="grid gap-1 max-h-40 overflow-y-auto rounded-xl border border-border p-2">
               <button
                 type="button"
                 onClick={() => onFolderChange(null)}
                 className={cn(
-                  'rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                  'flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
                   selectedFolderId === null
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'hover:bg-muted text-muted-foreground'
                 )}
               >
-                Racine de la section
+                <span className="flex-1">Racine de la section</span>
+                {selectedFolderId === null && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
               </button>
-              {sectionFolders.map((folder) => (
-                <button
-                  key={folder.id}
-                  type="button"
-                  onClick={() => onFolderChange(folder.id)}
-                  className={cn(
-                    'rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                    selectedFolderId === folder.id
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'hover:bg-muted'
-                  )}
-                >
-                  {folder.name.replace(/^\[.*?\]\s*/, '')}
-                </button>
-              ))}
+              {sectionFolders.map((folder) => {
+                const isSelected = selectedFolderId === folder.id;
+                return (
+                  <button
+                    key={folder.id}
+                    type="button"
+                    onClick={() => onFolderChange(folder.id)}
+                    className={cn(
+                      'flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                      isSelected
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'hover:bg-muted'
+                    )}
+                  >
+                    <Folder className={cn('h-3.5 w-3.5', isSelected ? 'text-primary' : 'text-muted-foreground')} />
+                    <span className="flex-1">{folder.name.replace(/^\[.*?\]\s*/, '')}</span>
+                    {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

@@ -11,9 +11,6 @@ import {
   Sparkles,
   ChevronRight,
   BookOpen,
-  User,
-  Rocket,
-  Boxes,
   Library,
   CornerDownLeft,
   Folder,
@@ -38,6 +35,7 @@ import { NewFolderDialog } from '@/components/docs/dialogs/folder-dialogs';
 import { NewDocumentDialog } from '@/components/docs/dialogs/document-dialogs';
 import { createFolder, createDocument } from '@/lib/actions/documents';
 import { cn } from '@/lib/utils';
+import { wikiSections } from '@/lib/wiki-sections';
 import type { FolderWithChildren, DocumentSummary } from '@/lib/actions/documents';
 
 interface WikiStructuredProps {
@@ -68,16 +66,6 @@ export interface WikiIndexItem {
   parents: { id: string; title: string; type: string }[];
   updatedAt?: string;
 }
-
-// Navigation sections for sidebar (collapsible categories)
-const navSections = [
-  { id: 'go-live', label: 'Go Live', icon: Rocket },
-  { id: 'urgence', label: 'Urgence', icon: Sparkles },
-  { id: 'setup-projet', label: 'Setup projet', icon: Boxes },
-  { id: 'client', label: 'Client', icon: User },
-  { id: 'outils', label: 'Outils', icon: Library },
-  { id: 'reference', label: 'References', icon: BookOpen },
-];
 
 // Build flat index for search
 function buildWikiIndex(
@@ -180,7 +168,7 @@ function folderBelongsToSection(folder: FolderWithChildren, sectionId: string, s
 
 // Helper to get section for a folder
 function getFolderSection(folder: FolderWithChildren): { id: string; label: string } | null {
-  for (const section of navSections) {
+  for (const section of wikiSections) {
     if (folderBelongsToSection(folder, section.id, section.label)) {
       return { id: section.id, label: section.label };
     }
@@ -226,7 +214,7 @@ export function WikiStructured({
   // Get current section object
   const currentSectionObj = useMemo(() => {
     if (selectedSection) {
-      return navSections.find((s) => s.id === selectedSection) || null;
+      return wikiSections.find((s) => s.id === selectedSection) || null;
     }
     return null;
   }, [selectedSection]);
@@ -436,7 +424,7 @@ export function WikiStructured({
               <Separator className="my-4" />
 
               <div className="grid gap-2">
-                {navSections.map((section) => {
+                {wikiSections.map((section) => {
                   const Icon = section.icon;
                   const isExpanded = expandedSections[section.id];
                   const isSectionSelected = selectedSection === section.id && !selectedFolderId;

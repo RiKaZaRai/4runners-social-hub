@@ -11,17 +11,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { wikiSections } from '@/lib/wiki-sections';
 import type { FolderWithChildren } from '@/lib/actions/documents';
-
-// Sections disponibles pour les dossiers Wiki
-const wikiSections = [
-  { id: 'go-live', label: 'Go Live' },
-  { id: 'urgence', label: 'Urgence' },
-  { id: 'setup-projet', label: 'Setup projet' },
-  { id: 'client', label: 'Client' },
-  { id: 'outils', label: 'Outils' },
-  { id: 'reference', label: 'References' },
-];
 
 interface NewFolderDialogProps {
   open: boolean;
@@ -60,21 +51,32 @@ export function NewFolderDialog({
           <div className="space-y-2">
             <Label>Section</Label>
             <div className="grid grid-cols-2 gap-2">
-              {wikiSections.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => onSectionChange(section.id)}
-                  className={cn(
-                    'rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors',
-                    selectedSection === section.id
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border hover:bg-muted'
-                  )}
-                >
-                  {section.label}
-                </button>
-              ))}
+              {wikiSections.map((section) => {
+                const Icon = section.icon;
+                const isSelected = selectedSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => onSectionChange(section.id)}
+                    className={cn(
+                      'group flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium transition-colors',
+                      isSelected
+                        ? 'border-primary/30 bg-primary/10 text-primary'
+                        : 'border-border hover:bg-muted'
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        'h-4 w-4',
+                        isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                      )}
+                    />
+                    <span className="flex-1">{section.label}</span>
+                    {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
