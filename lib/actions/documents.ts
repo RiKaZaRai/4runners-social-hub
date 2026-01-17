@@ -23,7 +23,7 @@ export type DocumentSummary = {
   id: string;
   title: string;
   folderId: string | null;
-  updatedAt: Date;
+  updatedAt: string;
 };
 
 // ============================================
@@ -339,7 +339,12 @@ export async function updateDocument(
     revalidatePath(`/wiki/${docId}`);
   }
 
-  return updated;
+  // Return serializable data
+  return {
+    id: updated.id,
+    title: updated.title,
+    updatedAt: updated.updatedAt.toISOString()
+  };
 }
 
 export async function deleteDocument(docId: string) {
@@ -404,7 +409,13 @@ export async function getDocumentVersions(docId: string) {
     }
   });
 
-  return versions;
+  // Serialize dates for client components
+  return versions.map((v) => ({
+    id: v.id,
+    title: v.title,
+    createdAt: v.createdAt,
+    createdBy: v.createdBy
+  }));
 }
 
 export async function restoreVersion(versionId: string) {
@@ -554,9 +565,17 @@ export async function getFoldersAndDocuments(tenantId: string | null) {
       }));
   };
 
+  // Serialize dates for client components
+  const serializedDocuments = documents.map((d) => ({
+    id: d.id,
+    title: d.title,
+    folderId: d.folderId,
+    updatedAt: d.updatedAt.toISOString()
+  }));
+
   return {
     folders: buildTree(null),
-    documents: documents as DocumentSummary[]
+    documents: serializedDocuments
   };
 }
 
