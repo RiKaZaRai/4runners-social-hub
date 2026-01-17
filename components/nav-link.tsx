@@ -2,21 +2,32 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Building2, Home, Inbox, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
+
+const icons = {
+  home: Home,
+  inbox: Inbox,
+  building: Building2,
+  settings: Settings,
+} as const;
+
+type IconName = keyof typeof icons;
 
 interface NavLinkProps {
   href: string;
-  icon: LucideIcon;
+  icon: IconName;
   children: React.ReactNode;
   exact?: boolean;
 }
 
-export function NavLink({ href, icon: Icon, children, exact = false }: NavLinkProps) {
+export function NavLink({ href, icon, children, exact = false }: NavLinkProps) {
   const pathname = usePathname();
   const isActive = exact
     ? pathname === href
     : pathname === href || pathname.startsWith(`${href}/`);
+
+  const Icon = icons[icon];
 
   return (
     <Link

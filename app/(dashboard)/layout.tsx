@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, Home, Inbox, Settings, Link2 } from 'lucide-react';
+import { Building2, Link2 } from 'lucide-react';
 import { NavLink } from '@/components/nav-link';
 import { WikiNavLink } from '@/components/wiki/wiki-nav-link';
 import { requireSession } from '@/lib/auth';
@@ -50,13 +50,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <nav className="flex-1 space-y-6 px-4 py-5 text-sm">
             {/* Menu principal - usage quotidien uniquement */}
             <div className="space-y-1">
-              <NavLink href="/home" icon={Home}>
+              <NavLink href="/home" icon="home">
                 Accueil
               </NavLink>
-              <NavLink href="/inbox" icon={Inbox}>
+              <NavLink href="/inbox" icon="inbox">
                 Inbox
               </NavLink>
-              <NavLink href={isClient ? '/posts' : '/spaces'} icon={Building2}>
+              <NavLink href={isClient ? '/posts' : '/spaces'} icon="building">
                 Espaces
               </NavLink>
               {!isClient && <WikiNavLink />}
@@ -121,7 +121,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <p className="px-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   Administration
                 </p>
-                <NavLink href="/settings" icon={Settings}>
+                <NavLink href="/settings" icon="settings">
                   Parametres
                 </NavLink>
               </div>
