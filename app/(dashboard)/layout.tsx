@@ -36,7 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
-        <aside className="flex w-64 flex-col bg-card/60">
+        <aside className="flex w-64 flex-col bg-secondary/60">
           <div className="px-5 py-5">
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">4runners</p>
             <h1 className="text-lg font-semibold">Social Hub</h1>
