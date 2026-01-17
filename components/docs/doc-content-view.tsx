@@ -16,7 +16,6 @@ import { common, createLowlight } from 'lowlight';
 import { Hash, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -245,18 +244,16 @@ export function DocContentView({
     <div className="flex gap-5">
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        {/* Header block */}
+        {/* Header block with title, badges and edit button */}
         <div className="mb-4">
           {/* Section · Folder label */}
           <div className="mb-2 text-sm text-muted-foreground">
             {sectionLabel} · {folderName}
           </div>
 
-          {/* Title */}
-          <h1 className="mb-4 text-3xl font-bold">{title}</h1>
-
-          {/* Metadata badges + Edit button */}
+          {/* Title + Metadata badges + Edit button - all aligned */}
           <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold">{title}</h1>
             <Badge variant="secondary" className="rounded-full">
               Owner: {ownerName}
             </Badge>
@@ -278,26 +275,22 @@ export function DocContentView({
         {/* Separator */}
         <Separator className="mb-4" />
 
-        {/* Content block with border */}
-        <Card className="rounded-2xl">
-          <CardContent className="p-6">
-            <article className="prose prose-sm max-w-none dark:prose-invert prose-headings:scroll-mt-20">
-              <EditorContent editor={editor} />
-            </article>
-          </CardContent>
-        </Card>
+        {/* Document content */}
+        <article className="prose prose-sm max-w-none dark:prose-invert prose-headings:scroll-mt-20">
+          <EditorContent editor={editor} />
+        </article>
       </div>
 
       {/* TOC Sidebar */}
       <aside className="hidden w-64 shrink-0 lg:block">
         <div className="sticky top-0">
-          <Card className="rounded-2xl border-border/70 bg-card/80">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold">Sommaire</CardTitle>
+          <div className="rounded-2xl border border-border/70 bg-card/80">
+            <div className="flex flex-col space-y-1.5 p-6 pb-2">
+              <h3 className="tracking-tight text-sm font-bold">Sommaire</h3>
               <p className="text-xs text-muted-foreground">Navigation rapide</p>
-            </CardHeader>
-            <Separator className="mx-4 mb-2" />
-            <CardContent className="pt-0">
+            </div>
+            <Separator className="mb-2" />
+            <div className="p-6 pt-0">
               <ScrollArea className="max-h-[calc(100vh-300px)]">
                 <nav className="space-y-1">
                   {toc.length > 0 ? (
@@ -326,8 +319,8 @@ export function DocContentView({
                   )}
                 </nav>
               </ScrollArea>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </aside>
     </div>
