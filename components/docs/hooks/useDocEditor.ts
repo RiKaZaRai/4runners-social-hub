@@ -306,7 +306,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     };
   }, [isDirty, readOnly, editor, handleSave]);
 
-  // Save on unmount if dirty
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (autosaveTimerRef.current) {
