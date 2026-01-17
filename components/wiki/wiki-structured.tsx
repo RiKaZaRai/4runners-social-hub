@@ -4,7 +4,6 @@ import { useState, useMemo, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
-  Plus,
   FolderPlus,
   FileText,
   Star,
@@ -19,7 +18,6 @@ import {
   CornerDownLeft,
   Folder,
   Map,
-  Home,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,14 +34,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { NewFolderDialog } from '@/components/docs/dialogs/folder-dialogs';
 import { NewDocumentDialog } from '@/components/docs/dialogs/document-dialogs';
 import { createFolder, createDocument } from '@/lib/actions/documents';
@@ -215,6 +205,9 @@ export function WikiStructured({
   const [showNewDocDialog, setShowNewDocDialog] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [folderSection, setFolderSection] = useState<string>('');
+  // Document dialog states
+  const [docSection, setDocSection] = useState<string>('');
+  const [docFolderId, setDocFolderId] = useState<string | null>(null);
 
   // Search state
   const [query, setQuery] = useState('');
@@ -397,17 +390,22 @@ export function WikiStructured({
   // Handle new document
   const handleNewDocument = () => {
     setInputValue('');
+    setDocSection('');
+    setDocFolderId(null);
     setShowNewDocDialog(true);
   };
 
   const handleCreateDocument = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !docSection) return;
 
     startTransition(async () => {
       try {
-        const doc = await createDocument(tenantId, null, inputValue.trim());
+        // Create document in the selected folder (or null for section root)
+        const doc = await createDocument(tenantId, docFolderId, inputValue.trim());
         setShowNewDocDialog(false);
         setInputValue('');
+        setDocSection('');
+        setDocFolderId(null);
         router.push(`${basePath}/${doc.id}/edit`);
       } catch (error) {
         console.error('Failed to create document:', error);
@@ -580,23 +578,9 @@ export function WikiStructured({
                   )}
                 </div>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" className="h-11 rounded-xl">
-                      <Plus className="mr-2 h-4 w-4" /> Creer
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Ajouter</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleNewFolder}>
-                      <FolderPlus className="mr-2 h-4 w-4" /> Nouveau dossier
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleNewDocument}>
-                      <FileText className="mr-2 h-4 w-4" /> Nouveau document
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="secondary" className="h-11 rounded-xl" onClick={handleNewFolder}>
+                  <FolderPlus className="mr-2 h-4 w-4" /> Nouveau dossier
+                </Button>
 
                 <Button className="h-11 rounded-xl" onClick={handleNewDocument}>
                   <FileText className="mr-2 h-4 w-4" /> Nouveau doc
@@ -877,6 +861,12 @@ export function WikiStructured({
         onInputChange={setInputValue}
         onSubmit={handleCreateDocument}
         isPending={isPending}
+        showSectionPicker
+        selectedSection={docSection}
+        onSectionChange={setDocSection}
+        selectedFolderId={docFolderId}
+        onFolderChange={setDocFolderId}
+        folders={folders}
       />
     </div>
   );
