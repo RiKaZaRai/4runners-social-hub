@@ -242,18 +242,20 @@ export function DocContentView({
 
   return (
     <div className="flex gap-5">
-      {/* Main content */}
-      <div className="flex-1 min-w-0">
-        {/* Header block with title, badges and edit button */}
-        <div className="mb-4">
+      {/* Main content with border */}
+      <div className="flex-1 min-w-0 rounded-2xl border border-border/70 bg-card/50">
+        {/* Header block */}
+        <div className="p-5 pb-0">
           {/* Section · Folder label */}
           <div className="mb-2 text-sm text-muted-foreground">
             {sectionLabel} · {folderName}
           </div>
 
-          {/* Title + Metadata badges + Edit button - all aligned */}
+          {/* Title */}
+          <h1 className="mb-3 text-3xl font-bold">{title}</h1>
+
+          {/* Badges + Edit button - aligned vertically */}
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold">{title}</h1>
             <Badge variant="secondary" className="rounded-full">
               Owner: {ownerName}
             </Badge>
@@ -273,12 +275,16 @@ export function DocContentView({
         </div>
 
         {/* Separator */}
-        <Separator className="mb-4" />
+        <div className="px-5 py-4">
+          <Separator />
+        </div>
 
         {/* Document content */}
-        <article className="prose prose-sm max-w-none dark:prose-invert prose-headings:scroll-mt-20">
-          <EditorContent editor={editor} />
-        </article>
+        <div className="p-5 pt-0">
+          <article className="prose prose-sm max-w-none dark:prose-invert prose-headings:scroll-mt-20">
+            <EditorContent editor={editor} />
+          </article>
+        </div>
       </div>
 
       {/* TOC Sidebar */}
@@ -289,7 +295,9 @@ export function DocContentView({
               <h3 className="tracking-tight text-sm font-bold">Sommaire</h3>
               <p className="text-xs text-muted-foreground">Navigation rapide</p>
             </div>
-            <Separator className="mb-2" />
+            <div className="px-6 py-2">
+              <Separator />
+            </div>
             <div className="p-6 pt-0">
               <ScrollArea className="max-h-[calc(100vh-300px)]">
                 <nav className="space-y-1">
