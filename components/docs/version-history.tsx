@@ -21,7 +21,7 @@ interface Version {
     id: string;
     name: string | null;
     email: string;
-  };
+  } | null;
 }
 
 interface VersionHistoryProps {
@@ -90,7 +90,7 @@ export function VersionHistory({ versions, currentDocId }: VersionHistoryProps) 
                     <p className="text-sm font-medium">{version.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatDate(version.createdAt)} par{' '}
-                      {version.createdBy.name || version.createdBy.email}
+                      {version.createdBy?.name || version.createdBy?.email || 'Inconnu'}
                     </p>
                   </div>
                   <Button

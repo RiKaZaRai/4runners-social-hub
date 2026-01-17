@@ -86,7 +86,7 @@ export default async function SpaceDocumentPage({
     id: string;
     title: string;
     createdAt: string;
-    createdBy: { id: string; name: string | null; email: string };
+    createdBy: { id: string; name: string | null; email: string } | null;
   }> = [];
 
   if (isAgency) {
@@ -96,7 +96,7 @@ export default async function SpaceDocumentPage({
     ]);
     folders = data.folders;
     documents = data.documents;
-    serializedVersions = v.map((ver) => ({
+    serializedVersions = v.map((ver: { id: string; title: string; createdAt: Date; createdBy: { id: string; name: string | null; email: string } | null }) => ({
       ...ver,
       createdAt: ver.createdAt.toISOString()
     }));

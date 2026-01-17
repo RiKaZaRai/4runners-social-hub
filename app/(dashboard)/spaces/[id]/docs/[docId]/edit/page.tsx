@@ -51,7 +51,7 @@ export default async function SpaceDocEditPage({
   }
 
   // Serialize dates for client component
-  const serializedVersions = versions.map((v) => ({
+  const serializedVersions = versions.map((v: { id: string; title: string; createdAt: Date; createdBy: { id: string; name: string | null; email: string } | null }) => ({
     ...v,
     createdAt: v.createdAt.toISOString()
   }));
