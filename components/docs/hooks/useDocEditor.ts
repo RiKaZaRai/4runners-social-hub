@@ -229,6 +229,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
       }
       setIsDirty(true);
       setLastSaveSkipped(false);
+      setSaveError(null);
     }
   });
 
@@ -326,12 +327,9 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     };
   }, [isDirty, readOnly, editor, handleSave]);
 
-  // Cleanup all timers on unmount
+  // Cleanup retry timer on unmount (debounce timer is cleaned by its own effect)
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current);
       }
@@ -342,6 +340,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     setTitle(e.target.value);
     setIsDirty(true);
     setLastSaveSkipped(false);
+    setSaveError(null);
   };
 
   const addLink = () => {
