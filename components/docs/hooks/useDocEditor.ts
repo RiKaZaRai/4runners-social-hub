@@ -235,8 +235,6 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     setIsSaving(true);
     setSaveError(null);
 
-    let aborted = false;
-
     try {
       const result = await onSave(titleRef.current, editor.getJSON());
       setIsDirty(false);
@@ -244,10 +242,9 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
       setLastSaved(new Date(result.updatedAt));
       retryCountRef.current = 0; // Reset retry count on success
     } catch (error) {
-      // Check if request was aborted (cancelled by a newer save)
+      // Aborted requests (cancelled by a newer save) - no error UI, no retry
       if (error instanceof DOMException && error.name === 'AbortError') {
-        aborted = true;
-        // No error UI, no retry - just unlock and let next save proceed
+        // noop - just unlock and let next save proceed
       } else {
         console.error('Save failed:', error);
         setSaveError('Erreur de sauvegarde');
