@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { isAgencyRole } from '@/lib/roles';
-import { getFoldersAndDocuments } from '@/lib/actions/documents';
+import { getFoldersAndDocumentsFull } from '@/lib/actions/documents';
 import { WikiStructured } from '@/components/wiki';
 
 export default async function WikiPage() {
@@ -17,7 +17,7 @@ export default async function WikiPage() {
     redirect('/spaces');
   }
 
-  const { folders, documents } = await getFoldersAndDocuments(null);
+  const { folders, documents } = await getFoldersAndDocumentsFull(null);
 
   return (
     <div className="h-[calc(100vh-4rem)]">

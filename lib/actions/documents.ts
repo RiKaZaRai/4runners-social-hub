@@ -28,6 +28,18 @@ export type DocumentSummary = {
   updatedAt: string;
 };
 
+export type DocumentFull = {
+  id: string;
+  title: string;
+  folderId: string | null;
+  content: Prisma.JsonValue;
+  updatedAt: string;
+  createdBy: {
+    name: string | null;
+    email: string;
+  } | null;
+};
+
 // ============================================
 // Helpers
 // ============================================
@@ -573,6 +585,67 @@ export async function getFoldersAndDocuments(tenantId: string | null) {
     title: d.title,
     folderId: d.folderId,
     updatedAt: d.updatedAt.toISOString()
+  }));
+
+  return {
+    folders: buildTree(null),
+    documents: serializedDocuments
+  };
+}
+
+export async function getFoldersAndDocumentsFull(tenantId: string | null) {
+  const session = await requireSession();
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { role: true }
+  });
+
+  if (!user) throw new Error('USER_NOT_FOUND');
+
+  if (tenantId === null && !isAgencyRole(user.role)) {
+    throw new Error('ACCESS_DENIED');
+  }
+
+  const folders = await prisma.docFolder.findMany({
+    where: { tenantId },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }]
+  });
+
+  const documents = await prisma.document.findMany({
+    where: { tenantId },
+    select: {
+      id: true,
+      title: true,
+      folderId: true,
+      content: true,
+      updatedAt: true,
+      createdBy: { select: { name: true, email: true } }
+    },
+    orderBy: { title: 'asc' }
+  });
+
+  // Construire l'arborescence des dossiers
+  const buildTree = (parentId: string | null): FolderWithChildren[] => {
+    return folders
+      .filter((f) => f.parentId === parentId)
+      .map((f) => ({
+        id: f.id,
+        name: f.name,
+        parentId: f.parentId,
+        sortOrder: f.sortOrder,
+        children: buildTree(f.id)
+      }));
+  };
+
+  // Serialize dates for client components
+  const serializedDocuments: DocumentFull[] = documents.map((d) => ({
+    id: d.id,
+    title: d.title,
+    folderId: d.folderId,
+    content: d.content,
+    updatedAt: d.updatedAt.toISOString(),
+    createdBy: d.createdBy
   }));
 
   return {

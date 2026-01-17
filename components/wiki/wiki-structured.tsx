@@ -36,11 +36,13 @@ import { NewDocumentDialog } from '@/components/docs/dialogs/document-dialogs';
 import { createFolder, createDocument } from '@/lib/actions/documents';
 import { cn } from '@/lib/utils';
 import { wikiSections } from '@/lib/wiki-sections';
-import type { FolderWithChildren, DocumentSummary } from '@/lib/actions/documents';
+import { DocContentView } from '@/components/docs/doc-content-view';
+import type { FolderWithChildren, DocumentFull } from '@/lib/actions/documents';
+import type { JSONContent } from '@tiptap/react';
 
 interface WikiStructuredProps {
   folders: FolderWithChildren[];
-  documents: DocumentSummary[];
+  documents: DocumentFull[];
   basePath: string;
   tenantId?: string | null;
 }
@@ -70,7 +72,7 @@ export interface WikiIndexItem {
 // Build flat index for search
 function buildWikiIndex(
   folders: FolderWithChildren[],
-  documents: DocumentSummary[]
+  documents: DocumentFull[]
 ): WikiIndexItem[] {
   const flat: WikiIndexItem[] = [];
 
@@ -188,6 +190,7 @@ export function WikiStructured({
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
 
   // Dialog states
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
@@ -219,6 +222,29 @@ export function WikiStructured({
     }
     return null;
   }, [selectedSection]);
+
+  // Get selected document
+  const selectedDoc = useMemo(() => {
+    if (!selectedDocId) return null;
+    return documents.find((d) => d.id === selectedDocId) || null;
+  }, [selectedDocId, documents]);
+
+  // Get document context (section label and folder name)
+  const docContext = useMemo(() => {
+    if (!selectedDoc) return { sectionLabel: '', folderName: '' };
+
+    const folder = folders.find((f) => f.id === selectedDoc.folderId);
+    if (!folder) return { sectionLabel: 'Wiki', folderName: 'Racine' };
+
+    // Extract section from folder name
+    const sectionMatch = folder.name.match(/^\[([^\]]+)\]/);
+    const sectionId = sectionMatch ? sectionMatch[1].toLowerCase() : '';
+    const section = wikiSections.find((s) => s.id === sectionId);
+    const sectionLabel = section?.label || sectionId.replace(/-/g, ' ');
+    const folderName = folder.name.replace(/^\[.*?\]\s*/, '');
+
+    return { sectionLabel, folderName };
+  }, [selectedDoc, folders]);
 
   // Filter folders and documents based on current context
   const contextFolders = useMemo(() => {
@@ -290,12 +316,26 @@ export function WikiStructured({
     (id: string) => {
       const item = index.find((i) => i.id === id);
       if (item?.type === 'doc') {
-        router.push(`${basePath}/${id}/edit`);
+        // Find the document and its folder to set context
+        const doc = documents.find((d) => d.id === id);
+        if (doc?.folderId) {
+          const folder = folders.find((f) => f.id === doc.folderId);
+          if (folder) {
+            const section = getFolderSection(folder);
+            if (section) {
+              setSelectedSection(section.id);
+              setExpandedSections((prev) => ({ ...prev, [section.id]: true }));
+            }
+            setSelectedFolderId(doc.folderId);
+            setExpandedFolders((prev) => ({ ...prev, [doc.folderId!]: true }));
+          }
+        }
+        setSelectedDocId(id);
       }
       setQuery('');
       setIsSearchOpen(false);
     },
-    [index, router, basePath]
+    [index, documents, folders]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -331,7 +371,8 @@ export function WikiStructured({
   const handleSectionClick = (sectionId: string) => {
     toggleSection(sectionId);
     setSelectedSection(sectionId);
-    setSelectedFolderId(null); // Clear folder selection when selecting a section
+    setSelectedFolderId(null);
+    setSelectedDocId(null);
   };
 
   // Toggle folder expand/collapse
@@ -343,18 +384,33 @@ export function WikiStructured({
   const handleFolderClick = (folderId: string, sectionId: string) => {
     toggleFolder(folderId);
     setSelectedFolderId(folderId);
-    setSelectedSection(sectionId); // Keep section context
+    setSelectedSection(sectionId);
+    setSelectedDocId(null);
   };
 
   // Navigate back to overview
   const handleBackToOverview = () => {
     setSelectedSection(null);
     setSelectedFolderId(null);
+    setSelectedDocId(null);
   };
 
   // Navigate back to section
   const handleBackToSection = () => {
     setSelectedFolderId(null);
+    setSelectedDocId(null);
+  };
+
+  // Navigate back to folder (from document view)
+  const handleBackToFolder = () => {
+    setSelectedDocId(null);
+  };
+
+  // Handle edit document
+  const handleEditDocument = () => {
+    if (selectedDocId) {
+      router.push(`${basePath}/${selectedDocId}/edit`);
+    }
   };
 
   // Handle new folder
@@ -494,16 +550,25 @@ export function WikiStructured({
                                 </button>
                                 {isFolderExpanded && folderDocs.length > 0 && (
                                   <div className="ml-4 mt-1 space-y-0.5 border-l border-border/40 pl-2">
-                                    {folderDocs.map((doc) => (
-                                      <button
-                                        key={doc.id}
-                                        onClick={() => router.push(`${basePath}/${doc.id}`)}
-                                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-muted-foreground transition hover:bg-background/35 hover:text-foreground"
-                                      >
-                                        <FileText className="h-3 w-3" />
-                                        <span className="truncate">{doc.title}</span>
-                                      </button>
-                                    ))}
+                                    {folderDocs.map((doc) => {
+                                      const isDocSelected = selectedDocId === doc.id;
+                                      return (
+                                        <button
+                                          key={doc.id}
+                                          onClick={() => handleSelect(doc.id)}
+                                          className={cn(
+                                            'flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs transition',
+                                            isDocSelected
+                                              ? 'bg-primary/10 text-primary font-medium'
+                                              : 'text-muted-foreground hover:bg-background/35 hover:text-foreground'
+                                          )}
+                                        >
+                                          <FileText className="h-3 w-3" />
+                                          <span className="truncate">{doc.title}</span>
+                                          {isDocSelected && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </div>
@@ -607,7 +672,7 @@ export function WikiStructured({
                   onClick={handleBackToOverview}
                   className={cn(
                     'font-semibold transition hover:text-foreground',
-                    !selectedSection ? 'text-foreground' : 'text-foreground/85'
+                    !selectedSection && !selectedDocId ? 'text-foreground' : 'text-foreground/85'
                   )}
                 >
                   Wiki
@@ -619,7 +684,7 @@ export function WikiStructured({
                       onClick={handleBackToSection}
                       className={cn(
                         'transition hover:text-foreground',
-                        !selectedFolderId ? 'font-semibold text-foreground' : ''
+                        !selectedFolderId && !selectedDocId ? 'font-semibold text-foreground' : ''
                       )}
                     >
                       {currentSectionObj.label}
@@ -629,12 +694,26 @@ export function WikiStructured({
                 {selectedFolder && (
                   <>
                     <ChevronRight className="h-3.5 w-3.5" />
-                    <span className="font-semibold text-foreground">
+                    <button
+                      onClick={handleBackToFolder}
+                      className={cn(
+                        'transition hover:text-foreground',
+                        !selectedDocId ? 'font-semibold text-foreground' : ''
+                      )}
+                    >
                       {selectedFolder.name.replace(/^\[.*?\]\s*/, '')}
+                    </button>
+                  </>
+                )}
+                {selectedDoc && (
+                  <>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                    <span className="font-semibold text-foreground">
+                      {selectedDoc.title}
                     </span>
                   </>
                 )}
-                {!selectedSection && !selectedFolderId && (
+                {!selectedSection && !selectedFolderId && !selectedDocId && (
                   <>
                     <ChevronRight className="h-3.5 w-3.5" />
                     <span>Vue d&apos;ensemble</span>
@@ -646,6 +725,19 @@ export function WikiStructured({
 
           {/* CONTENT */}
           <div className="p-5">
+            {selectedDoc ? (
+              /* Document view */
+              <DocContentView
+                docId={selectedDoc.id}
+                title={selectedDoc.title}
+                content={selectedDoc.content as JSONContent}
+                updatedAt={selectedDoc.updatedAt}
+                createdBy={selectedDoc.createdBy}
+                sectionLabel={docContext.sectionLabel}
+                folderName={docContext.folderName}
+                onEdit={handleEditDocument}
+              />
+            ) : (
             <div className="grid gap-5">
               {/* KPI badges */}
               <div className="flex flex-wrap items-center gap-2">
@@ -849,6 +941,7 @@ export function WikiStructured({
                 </CardContent>
               </Card>
             </div>
+            )}
           </div>
         </main>
       </div>
