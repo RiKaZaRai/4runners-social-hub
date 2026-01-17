@@ -1,19 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useEditor, EditorContent, type JSONContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Link from '@tiptap/extension-link';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import TextAlign from '@tiptap/extension-text-align';
-import Highlight from '@tiptap/extension-highlight';
-import { TextStyle } from '@tiptap/extension-text-style';
-import Color from '@tiptap/extension-color';
-import HorizontalRule from '@tiptap/extension-horizontal-rule';
-import Image from '@tiptap/extension-image';
-import Youtube from '@tiptap/extension-youtube';
+import { EditorContent, type JSONContent } from '@tiptap/react';
 import { DragHandle } from '@tiptap/extension-drag-handle-react';
-import { common, createLowlight } from 'lowlight';
 import { Hash, Pencil, X, Check, AlertCircle, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,8 +14,6 @@ import { EditorToolbar } from './editor-toolbar';
 import { BubbleMenu } from './bubble-menu';
 import { LinkDialog } from './dialogs/link-dialog';
 import { ImageDialog } from './dialogs/image-dialog';
-
-const lowlight = createLowlight(common);
 
 interface TocItem {
   id: string;
@@ -162,11 +149,10 @@ export function DocContentView({
   const readingTime = useMemo(() => estimateReadingTime(content), [content]);
   const ownerName = createdBy?.name || createdBy?.email?.split('@')[0] || 'Inconnu';
 
-  // Editor for edit mode (using useDocEditor hook)
+  // Single editor using useDocEditor hook - always editable internally
   const {
-    editor: editEditor,
+    editor,
     title,
-    handleTitleChange,
     isSaving,
     isDirty,
     lastSaved,
@@ -187,62 +173,19 @@ export function DocContentView({
     initialContent: content,
     initialTitle: initialTitle,
     onSave,
-    readOnly: !isEditing,
+    readOnly: false, // Always start as editable internally
   });
 
-  // Simple read-only editor for view mode
-  const readEditor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-          HTMLAttributes: {
-            class: 'scroll-mt-20',
-          },
-        },
-        codeBlock: false,
-        horizontalRule: false,
-      }),
-      Link.configure({
-        openOnClick: true,
-        HTMLAttributes: {
-          class: 'text-primary underline',
-          target: '_blank',
-          rel: 'noopener noreferrer',
-        },
-      }),
-      CodeBlockLowlight.configure({
-        lowlight,
-      }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Highlight.configure({
-        multicolor: true,
-      }),
-      TextStyle,
-      Color,
-      HorizontalRule,
-      Image.configure({
-        HTMLAttributes: {
-          class: 'rounded-lg max-w-full',
-        },
-      }),
-      Youtube.configure({
-        HTMLAttributes: {
-          class: 'rounded-lg w-full aspect-video',
-        },
-      }),
-    ],
-    content: processedContent,
-    editable: false,
-  });
-
-  const editor = isEditing ? editEditor : readEditor;
+  // Toggle editable state when isEditing changes
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(isEditing);
+    }
+  }, [editor, isEditing]);
 
   // Intersection observer for TOC highlighting
   useEffect(() => {
-    if (!toc.length || isEditing) return;
+    if (!toc.length || isEditing || !editor) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -270,15 +213,15 @@ export function DocContentView({
 
   // Add IDs to headings after editor mounts
   useEffect(() => {
-    if (!readEditor) return;
+    if (!editor) return;
 
-    const editorElement = readEditor.view.dom;
+    const editorElement = editor.view.dom;
     const headings = editorElement.querySelectorAll('h1, h2, h3');
 
     headings.forEach((heading, index) => {
       heading.id = `heading-${index}`;
     });
-  }, [readEditor]);
+  }, [editor]);
 
   const scrollToHeading = (id: string) => {
     const element = document.getElementById(id);
@@ -293,9 +236,9 @@ export function DocContentView({
   };
 
   const handleCancelEdit = () => {
-    // Reset editor content to original
-    if (editEditor) {
-      editEditor.commands.setContent(content);
+    // Reset editor content to original and exit edit mode
+    if (editor) {
+      editor.commands.setContent(content);
     }
     setIsEditing(false);
   };
@@ -367,10 +310,10 @@ export function DocContentView({
           </div>
 
           {/* Toolbar when editing */}
-          {isEditing && editEditor && (
+          {isEditing && editor && (
             <div className="px-5 pt-4">
               <EditorToolbar
-                editor={editEditor}
+                editor={editor}
                 onOpenLinkDialog={openLinkDialog}
                 onOpenImageDialog={() => setShowImageDialog(true)}
               />
@@ -384,10 +327,10 @@ export function DocContentView({
 
           {/* Document content */}
           <div className="p-5 pt-0">
-            {isEditing && editEditor && (
+            {isEditing && editor && (
               <>
-                <BubbleMenu editor={editEditor} onOpenLinkDialog={openLinkDialog} />
-                <DragHandle editor={editEditor}>
+                <BubbleMenu editor={editor} onOpenLinkDialog={openLinkDialog} />
+                <DragHandle editor={editor}>
                   <div className="flex h-6 w-6 cursor-grab items-center justify-center rounded hover:bg-muted active:cursor-grabbing">
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                   </div>
