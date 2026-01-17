@@ -170,6 +170,80 @@ body {
   color: hsl(var(--muted-foreground));
 }
 
+/* Callout blocks - info style */
+.tiptap blockquote[data-callout="info"],
+.prose blockquote[data-callout="info"],
+.callout-info {
+  border-left: 3px solid hsl(206 90% 64%);
+  background: hsl(206 90% 64% / 0.08);
+  border-radius: var(--radius);
+  padding: 1rem 1rem 1rem 2.5rem;
+  margin: 1rem 0;
+  font-style: normal;
+  color: inherit;
+  position: relative;
+}
+
+.tiptap blockquote[data-callout="info"]::before,
+.prose blockquote[data-callout="info"]::before,
+.callout-info::before {
+  content: "ℹ";
+  position: absolute;
+  left: 0.75rem;
+  top: 1rem;
+  font-size: 1rem;
+  color: hsl(206 90% 64%);
+}
+
+/* Callout blocks - warning style */
+.tiptap blockquote[data-callout="warning"],
+.prose blockquote[data-callout="warning"],
+.callout-warning {
+  border-left: 3px solid hsl(45 100% 50%);
+  background: hsl(45 100% 50% / 0.08);
+  border-radius: var(--radius);
+  padding: 1rem 1rem 1rem 2.5rem;
+  margin: 1rem 0;
+  font-style: normal;
+  color: inherit;
+  position: relative;
+}
+
+.tiptap blockquote[data-callout="warning"]::before,
+.prose blockquote[data-callout="warning"]::before,
+.callout-warning::before {
+  content: "⚠";
+  position: absolute;
+  left: 0.75rem;
+  top: 1rem;
+  font-size: 1rem;
+  color: hsl(45 100% 50%);
+}
+
+/* Callout blocks - tip/shortcut style */
+.tiptap blockquote[data-callout="tip"],
+.prose blockquote[data-callout="tip"],
+.callout-tip {
+  border-left: 3px solid hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.5);
+  border-radius: var(--radius);
+  padding: 1rem 1rem 1rem 2.5rem;
+  margin: 1rem 0;
+  font-style: normal;
+  color: inherit;
+  position: relative;
+}
+
+.tiptap blockquote[data-callout="tip"]::before,
+.prose blockquote[data-callout="tip"]::before,
+.callout-tip::before {
+  content: "💡";
+  position: absolute;
+  left: 0.75rem;
+  top: 1rem;
+  font-size: 1rem;
+}
+
 /* Lowlight syntax highlighting */
 .tiptap pre .hljs-comment,
 .tiptap pre .hljs-quote {

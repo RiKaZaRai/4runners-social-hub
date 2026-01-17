@@ -81,7 +81,7 @@ export function DocEditorWrapper({
       <div className="flex items-center justify-between border-b px-4 py-2">
         <Button variant="ghost" size="sm" onClick={() => router.push(`${basePath}/${docId}`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
+          Mode lecture
         </Button>
         <VersionHistory versions={versions} currentDocId={docId} />
       </div>
