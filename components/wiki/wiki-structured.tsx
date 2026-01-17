@@ -18,6 +18,7 @@ import {
   Library,
   CornerDownLeft,
   Folder,
+  Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -620,7 +621,7 @@ export function WikiStructured({
                       <BookOpen className="mr-2 h-4 w-4" /> Comment utiliser ce Wiki
                     </Button>
                     <Button variant="secondary" className="justify-start rounded-xl">
-                      <Workflow className="mr-2 h-4 w-4" /> Parcours recommandes
+                      <Map className="mr-2 h-4 w-4" /> Parcours recommandes
                     </Button>
                     <Button variant="secondary" className="justify-start rounded-xl">
                       <Library className="mr-2 h-4 w-4" /> Templates & checklists
