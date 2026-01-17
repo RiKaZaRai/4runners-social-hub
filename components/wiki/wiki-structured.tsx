@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useTransition } from 'react';
+import { useState, useMemo, useCallback, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -33,7 +33,6 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { NewFolderDialog } from '@/components/docs/dialogs/folder-dialogs';
 import { NewDocumentDialog } from '@/components/docs/dialogs/document-dialogs';
-import { createFolder, createDocument } from '@/lib/actions/documents';
 import { cn } from '@/lib/utils';
 import { wikiSections } from '@/lib/wiki-sections';
 import { DocContentView } from '@/components/docs/doc-content-view';
@@ -160,6 +159,16 @@ function estimateReadingTime(): number {
   return Math.floor(Math.random() * 3) + 4;
 }
 
+// Helper to find a folder by ID recursively in a tree
+function findFolderById(list: FolderWithChildren[], id: string): FolderWithChildren | null {
+  for (const f of list) {
+    if (f.id === id) return f;
+    const child = findFolderById(f.children, id);
+    if (child) return child;
+  }
+  return null;
+}
+
 // Helper to check if a folder belongs to a section
 function folderBelongsToSection(folder: FolderWithChildren, sectionId: string, sectionLabel: string): boolean {
   return (
@@ -180,7 +189,7 @@ function getFolderSection(folder: FolderWithChildren): { id: string; label: stri
 
 export function WikiStructured({
   folders,
-  documents,
+  documents: propDocuments,
   basePath,
   tenantId = null,
 }: WikiStructuredProps) {
@@ -191,6 +200,17 @@ export function WikiStructured({
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+
+  // Local state for documents - updated after saves and synced from props
+  const [localDocuments, setLocalDocuments] = useState<DocumentFull[]>(propDocuments);
+
+  // Sync local documents with props when they change (e.g., after router.refresh())
+  useEffect(() => {
+    setLocalDocuments(propDocuments);
+  }, [propDocuments]);
+
+  // Use local documents for rendering
+  const documents = localDocuments;
 
   // Dialog states
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
@@ -209,10 +229,10 @@ export function WikiStructured({
   // Build flat index for search
   const index = useMemo(() => buildWikiIndex(folders, documents), [folders, documents]);
 
-  // Get current selected folder object
+  // Get current selected folder object (recursive search for nested folders)
   const selectedFolder = useMemo(() => {
     if (!selectedFolderId) return null;
-    return folders.find((f) => f.id === selectedFolderId) || null;
+    return findFolderById(folders, selectedFolderId);
   }, [selectedFolderId, folders]);
 
   // Get current section object
@@ -233,7 +253,7 @@ export function WikiStructured({
   const docContext = useMemo(() => {
     if (!selectedDoc) return { sectionLabel: '', folderName: '' };
 
-    const folder = folders.find((f) => f.id === selectedDoc.folderId);
+    const folder = selectedDoc.folderId ? findFolderById(folders, selectedDoc.folderId) : null;
     if (!folder) return { sectionLabel: 'Wiki', folderName: 'Racine' };
 
     // Extract section from folder name
@@ -250,7 +270,7 @@ export function WikiStructured({
   const contextFolders = useMemo(() => {
     if (selectedFolderId) {
       // If a folder is selected, show its children (subfolders)
-      const folder = folders.find((f) => f.id === selectedFolderId);
+      const folder = findFolderById(folders, selectedFolderId);
       return folder?.children || [];
     }
     if (selectedSection && currentSectionObj) {
@@ -319,7 +339,7 @@ export function WikiStructured({
         // Find the document and its folder to set context
         const doc = documents.find((d) => d.id === id);
         if (doc?.folderId) {
-          const folder = folders.find((f) => f.id === doc.folderId);
+          const folder = findFolderById(folders, doc.folderId);
           if (folder) {
             const section = getFolderSection(folder);
             if (section) {
@@ -435,9 +455,15 @@ export function WikiStructured({
       updatedAt: string;
     };
 
-    // Only refresh if content actually changed
+    // Update local state instead of router.refresh() - more efficient, no race conditions
     if (!data.skipped) {
-      router.refresh();
+      setLocalDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === selectedDocId
+            ? { ...doc, title: newTitle, content: newContent, updatedAt: data.updatedAt }
+            : doc
+        )
+      );
     }
 
     return data;
@@ -457,7 +483,18 @@ export function WikiStructured({
       try {
         // Create folder with section as a tag/prefix in the name
         const folderName = `[${folderSection.toUpperCase()}] ${inputValue.trim()}`;
-        await createFolder(tenantId, null, folderName);
+
+        const response = await fetch('/api/folders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenantId, parentId: null, name: folderName })
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to create folder');
+        }
+
         setShowNewFolderDialog(false);
         setInputValue('');
         setFolderSection('');
@@ -482,14 +519,43 @@ export function WikiStructured({
     startTransition(async () => {
       try {
         // Create document in the selected folder (or null for section root)
-        const doc = await createDocument(tenantId, docFolderId, inputValue.trim());
+        const response = await fetch('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenantId, folderId: docFolderId, title: inputValue.trim() })
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to create document');
+        }
+
+        const { document: doc } = await response.json();
+
         setShowNewDocDialog(false);
         setInputValue('');
         setDocSection('');
         setDocFolderId(null);
+
+        // Add new document to local state
+        setLocalDocuments((prev) => [
+          ...prev,
+          {
+            id: doc.id,
+            title: doc.title,
+            content: doc.content,
+            folderId: doc.folderId,
+            isPublic: doc.isPublic,
+            publicToken: doc.publicToken,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            createdBy: doc.createdBy
+          }
+        ]);
+
         // Select the new document inline (no navigation)
         if (docFolderId) {
-          const folder = folders.find((f) => f.id === docFolderId);
+          const folder = findFolderById(folders, docFolderId);
           if (folder) {
             const section = getFolderSection(folder);
             if (section) {
@@ -501,7 +567,6 @@ export function WikiStructured({
           }
         }
         setSelectedDocId(doc.id);
-        router.refresh();
       } catch (error) {
         console.error('Failed to create document:', error);
       }
@@ -770,8 +835,9 @@ export function WikiStructured({
           {/* CONTENT */}
           <div className="p-5">
             {selectedDoc ? (
-              /* Document view */
+              /* Document view - key forces remount when switching documents */
               <DocContentView
+                key={selectedDoc.id}
                 docId={selectedDoc.id}
                 title={selectedDoc.title}
                 content={selectedDoc.content as JSONContent}

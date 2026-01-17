@@ -184,6 +184,13 @@ export function DocContentView({
     }
   }, [editor, isEditing]);
 
+  // Sync editor content when docId or content changes (e.g., after router.refresh or switching docs)
+  useEffect(() => {
+    if (editor && !isEditing) {
+      editor.commands.setContent(content);
+    }
+  }, [editor, docId, content, isEditing]);
+
   // Intersection observer for TOC highlighting
   useEffect(() => {
     if (!toc.length || isEditing || !editor) return;
