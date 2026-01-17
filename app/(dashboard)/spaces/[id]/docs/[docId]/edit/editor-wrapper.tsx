@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { DocEditor } from '@/components/docs/doc-editor';
 import { VersionHistory } from '@/components/docs/version-history';
@@ -34,13 +35,18 @@ export function DocEditorWrapper({
   basePath
 }: DocEditorWrapperProps) {
   const router = useRouter();
+  const abortRef = useRef<AbortController | null>(null);
 
   const handleSave = async (title: string, content: JSONContent) => {
-    // Use fetch API instead of Server Action to avoid serialization issues
+    // Abort any in-flight request (latest wins)
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+
     const response = await fetch(`/api/documents/${docId}/autosave`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content })
+      body: JSON.stringify({ title, content }),
+      signal: abortRef.current.signal
     });
 
     if (!response.ok) {

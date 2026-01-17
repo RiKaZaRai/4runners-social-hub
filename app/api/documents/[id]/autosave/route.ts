@@ -8,12 +8,25 @@ import type { Prisma } from '@prisma/client';
 // Min interval between version snapshots (60 seconds)
 const MIN_VERSION_INTERVAL_MS = 60 * 1000;
 
-function stableStringify(obj: unknown): string {
-  try {
-    return JSON.stringify(obj, Object.keys(obj as object).sort());
-  } catch {
-    return JSON.stringify(obj);
-  }
+function stableStringify(value: unknown): string {
+  const seen = new WeakSet<object>();
+
+  const normalize = (v: unknown): unknown => {
+    if (v && typeof v === 'object') {
+      if (seen.has(v as object)) return '[Circular]';
+      seen.add(v as object);
+
+      if (Array.isArray(v)) return v.map(normalize);
+
+      const keys = Object.keys(v as object).sort();
+      const out: Record<string, unknown> = {};
+      for (const k of keys) out[k] = normalize((v as Record<string, unknown>)[k]);
+      return out;
+    }
+    return v;
+  };
+
+  return JSON.stringify(normalize(value));
 }
 
 function hashContent(content: unknown): string {

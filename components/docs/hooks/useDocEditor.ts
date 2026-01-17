@@ -57,6 +57,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const titleRef = useRef(title);
   const retryCountRef = useRef(0);
+  const savingRef = useRef(false); // Synchronous lock to prevent race conditions
 
   const editor = useEditor({
     extensions: [
@@ -228,8 +229,9 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   }, [title]);
 
   const handleSave = useCallback(async () => {
-    if (!editor || isSaving) return;
+    if (!editor || savingRef.current) return;
 
+    savingRef.current = true;
     setIsSaving(true);
     setSaveError(null);
 
@@ -240,6 +242,11 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
       setLastSaved(new Date(result.updatedAt));
       retryCountRef.current = 0; // Reset retry count on success
     } catch (error) {
+      // Ignore AbortError (request was cancelled by a newer save)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+
       console.error('Save failed:', error);
       setSaveError('Erreur de sauvegarde');
 
@@ -261,9 +268,10 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
         handleSave();
       }, delayWithJitter);
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
-  }, [editor, onSave, isSaving]);
+  }, [editor, onSave]);
 
   // Autosave effect
   useEffect(() => {
