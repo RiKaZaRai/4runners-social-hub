@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { EditorContent, type JSONContent } from '@tiptap/react';
 import { DragHandle } from '@tiptap/extension-drag-handle-react';
-import { Hash, Pencil, X, Check, AlertCircle, GripVertical } from 'lucide-react';
+import { Hash, Pencil, Trash2, Check, AlertCircle, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,6 +36,7 @@ interface DocContentViewProps {
   sectionLabel: string;
   folderName: string;
   onSave: (title: string, content: JSONContent) => Promise<SaveResult>;
+  onDelete?: () => void;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -140,11 +141,17 @@ export function DocContentView({
   sectionLabel,
   folderName,
   onSave,
+  onDelete,
 }: DocContentViewProps) {
   const [activeHeading, setActiveHeading] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [liveToc, setLiveToc] = useState<TocItem[]>([]);
 
-  const toc = useMemo(() => extractToc(content), [content]);
+  // Static TOC from props (for read mode)
+  const staticToc = useMemo(() => extractToc(content), [content]);
+
+  // Use live TOC when editing, static TOC otherwise
+  const toc = isEditing ? liveToc : staticToc;
   const processedContent = useMemo(() => addHeadingIds(content), [content]);
   const readingTime = useMemo(() => estimateReadingTime(content), [content]);
   const ownerName = createdBy?.name || createdBy?.email?.split('@')[0] || 'Inconnu';
@@ -190,6 +197,34 @@ export function DocContentView({
       editor.commands.setContent(content);
     }
   }, [editor, docId, content, isEditing]);
+
+  // Update live TOC when editor content changes (for edit mode)
+  useEffect(() => {
+    if (!editor || !isEditing) return;
+
+    const updateToc = () => {
+      const editorContent = editor.getJSON();
+      const newToc = extractToc(editorContent);
+      setLiveToc(newToc);
+
+      // Also update heading IDs in DOM
+      const editorElement = editor.view.dom;
+      const headings = editorElement.querySelectorAll('h1, h2, h3');
+      headings.forEach((heading, index) => {
+        heading.id = `heading-${index}`;
+      });
+    };
+
+    // Initial update
+    updateToc();
+
+    // Listen to editor updates
+    editor.on('update', updateToc);
+
+    return () => {
+      editor.off('update', updateToc);
+    };
+  }, [editor, isEditing]);
 
   // Intersection observer for TOC highlighting
   useEffect(() => {
@@ -243,14 +278,6 @@ export function DocContentView({
     setIsEditing(true);
   };
 
-  const handleCancelEdit = () => {
-    // Reset editor content to original and exit edit mode
-    if (editor) {
-      editor.commands.setContent(content);
-    }
-    setIsEditing(false);
-  };
-
   if (!editor) {
     return null;
   }
@@ -282,35 +309,36 @@ export function DocContentView({
                 Lecture: {readingTime} min
               </Badge>
               <div className="ml-auto flex items-center gap-2">
-                {isEditing ? (
-                  <>
-                    {/* Save status */}
-                    <span className="text-xs text-muted-foreground">
-                      {saveError ? (
-                        <span className="flex items-center gap-1 text-red-500">
-                          <AlertCircle className="h-3 w-3" />
-                          {saveError}
-                        </span>
-                      ) : isSaving ? (
-                        'Sauvegarde...'
-                      ) : isDirty ? (
-                        'Modifications non sauvegardées...'
-                      ) : lastSaved ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <Check className="h-3 w-3" />
-                          {lastSaveSkipped ? 'À jour' : `Sauvegardé à ${formatSaveTime(lastSaved)}`}
-                        </span>
-                      ) : null}
-                    </span>
-                    <Button onClick={handleCancelEdit} variant="outline" className="rounded-xl">
-                      <X className="mr-2 h-4 w-4" />
-                      Fermer
-                    </Button>
-                  </>
-                ) : (
+                {isEditing && (
+                  /* Save status - shown when editing */
+                  <span className="text-xs text-muted-foreground">
+                    {saveError ? (
+                      <span className="flex items-center gap-1 text-red-500">
+                        <AlertCircle className="h-3 w-3" />
+                        {saveError}
+                      </span>
+                    ) : isSaving ? (
+                      'Sauvegarde...'
+                    ) : isDirty ? (
+                      'Modifications non sauvegardées...'
+                    ) : lastSaved ? (
+                      <span className="flex items-center gap-1 text-green-600">
+                        <Check className="h-3 w-3" />
+                        {lastSaveSkipped ? 'À jour' : `Sauvegardé à ${formatSaveTime(lastSaved)}`}
+                      </span>
+                    ) : null}
+                  </span>
+                )}
+                {!isEditing && (
                   <Button onClick={handleEditClick} className="rounded-xl">
                     <Pencil className="mr-2 h-4 w-4" />
                     Editer
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button onClick={onDelete} variant="outline" className="rounded-xl text-destructive hover:bg-destructive hover:text-destructive-foreground">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
                   </Button>
                 )}
               </div>
@@ -351,52 +379,52 @@ export function DocContentView({
           </div>
         </div>
 
-        {/* TOC Sidebar - hidden when editing */}
-        {!isEditing && (
-          <aside className="hidden w-64 shrink-0 lg:block">
-            <div className="sticky top-0">
-              <div className="rounded-2xl border border-border/70 bg-card/80">
-                <div className="flex flex-col space-y-1.5 p-6 pb-2">
-                  <h3 className="tracking-tight text-sm font-bold">Sommaire</h3>
-                  <p className="text-xs text-muted-foreground">Navigation rapide</p>
-                </div>
-                <div className="px-6 py-2">
-                  <Separator />
-                </div>
-                <div className="p-6 pt-0">
-                  <ScrollArea className="max-h-[calc(100vh-300px)]">
-                    <nav className="space-y-1">
-                      {toc.length > 0 ? (
-                        toc.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => scrollToHeading(item.id)}
-                            className={cn(
-                              'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition',
-                              item.level === 1 && 'font-medium',
-                              item.level === 2 && 'pl-4',
-                              item.level === 3 && 'pl-6 text-xs',
-                              activeHeading === item.id
-                                ? 'bg-primary/10 text-primary'
-                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                            )}
-                          >
-                            <Hash className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{item.text}</span>
-                          </button>
-                        ))
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Aucun titre dans ce document
-                        </p>
-                      )}
-                    </nav>
-                  </ScrollArea>
-                </div>
+        {/* TOC Sidebar - always visible */}
+        <aside className="hidden w-64 shrink-0 lg:block">
+          <div className="sticky top-0">
+            <div className="rounded-2xl border border-border/70 bg-card/80">
+              <div className="flex flex-col space-y-1.5 p-6 pb-2">
+                <h3 className="tracking-tight text-sm font-bold">Sommaire</h3>
+                <p className="text-xs text-muted-foreground">
+                  {isEditing ? 'Mise à jour en direct' : 'Navigation rapide'}
+                </p>
+              </div>
+              <div className="px-6 py-2">
+                <Separator />
+              </div>
+              <div className="p-6 pt-0">
+                <ScrollArea className="max-h-[calc(100vh-300px)]">
+                  <nav className="space-y-1">
+                    {toc.length > 0 ? (
+                      toc.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => scrollToHeading(item.id)}
+                          className={cn(
+                            'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition',
+                            item.level === 1 && 'font-medium',
+                            item.level === 2 && 'pl-4',
+                            item.level === 3 && 'pl-6 text-xs',
+                            activeHeading === item.id
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          )}
+                        >
+                          <Hash className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{item.text}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {isEditing ? 'Ajoutez des titres (H1, H2, H3)' : 'Aucun titre dans ce document'}
+                      </p>
+                    )}
+                  </nav>
+                </ScrollArea>
               </div>
             </div>
-          </aside>
-        )}
+          </div>
+        </aside>
       </div>
 
       {/* Dialogs */}

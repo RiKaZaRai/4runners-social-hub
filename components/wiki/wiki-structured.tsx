@@ -15,13 +15,13 @@ import {
   CornerDownLeft,
   Folder,
   Map,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -469,6 +469,33 @@ export function WikiStructured({
     return data;
   };
 
+  // Handle delete document
+  const handleDeleteDocument = async (docId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) return;
+
+    try {
+      const response = await fetch(`/api/documents/${docId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete document');
+      }
+
+      // Remove from local state
+      setLocalDocuments((prev) => prev.filter((doc) => doc.id !== docId));
+
+      // If we were viewing this document, go back to folder view
+      if (selectedDocId === docId) {
+        setSelectedDocId(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      alert('Erreur lors de la suppression du document');
+    }
+  };
+
   // Handle new folder
   const handleNewFolder = () => {
     setInputValue('');
@@ -846,6 +873,7 @@ export function WikiStructured({
                 sectionLabel={docContext.sectionLabel}
                 folderName={docContext.folderName}
                 onSave={handleSaveDocument}
+                onDelete={() => handleDeleteDocument(selectedDoc.id)}
               />
             ) : (
             <div className="grid gap-5">
@@ -961,93 +989,80 @@ export function WikiStructured({
                 </Card>
               </div>
 
-              {/* Documents table with tabs */}
+              {/* Documents table */}
               <Card className="rounded-2xl border border-border/70 bg-card/80 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-extrabold">Documents</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="all" className="w-full">
-                    <TabsList className="rounded-xl bg-background/30">
-                      <TabsTrigger value="all" className="rounded-lg">
-                        Tous
-                      </TabsTrigger>
-                      <TabsTrigger value="process" className="rounded-lg">
-                        Process
-                      </TabsTrigger>
-                      <TabsTrigger value="roles" className="rounded-lg">
-                        Roles
-                      </TabsTrigger>
-                      <TabsTrigger value="templates" className="rounded-lg">
-                        Templates
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="all" className="mt-4">
-                      <div className="rounded-xl border border-border/60 bg-background/15">
-                        <ScrollArea className="h-[360px]">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-[45%]">Titre</TableHead>
-                                <TableHead>Categorie</TableHead>
-                                <TableHead>Mis a jour</TableHead>
-                                <TableHead className="text-right">Temps</TableHead>
+                  <div className="rounded-xl border border-border/60 bg-background/15">
+                    <ScrollArea className="h-[360px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead className="w-[50%]">Titre</TableHead>
+                            <TableHead>Mis à jour</TableHead>
+                            <TableHead className="text-right">Temps</TableHead>
+                            <TableHead className="w-10"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allDocs.length > 0 ? (
+                            allDocs.map((doc) => (
+                              <TableRow
+                                key={doc.id}
+                                className="group cursor-pointer transition-colors hover:bg-muted/50"
+                              >
+                                <TableCell
+                                  className="font-semibold"
+                                  onClick={() => handleSelect(doc.id)}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    <span className="truncate group-hover:text-primary transition-colors">{doc.title}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell
+                                  className="text-muted-foreground"
+                                  onClick={() => handleSelect(doc.id)}
+                                >
+                                  {formatRelativeTime(doc.updatedAt)}
+                                </TableCell>
+                                <TableCell
+                                  className="text-right text-muted-foreground"
+                                  onClick={() => handleSelect(doc.id)}
+                                >
+                                  {estimateReadingTime()} min
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteDocument(doc.id);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {allDocs.length > 0 ? (
-                                allDocs.map((doc) => (
-                                  <TableRow
-                                    key={doc.id}
-                                    className="cursor-pointer hover:bg-background/25"
-                                    onClick={() => handleSelect(doc.id)}
-                                  >
-                                    <TableCell className="font-semibold">
-                                      <div className="flex items-center gap-2">
-                                        <FileText className="h-4 w-4 text-muted-foreground" />
-                                        <span className="truncate">{doc.title}</span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant="secondary" className="rounded-full">
-                                        Doc
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                      {formatRelativeTime(doc.updatedAt)}
-                                    </TableCell>
-                                    <TableCell className="text-right text-muted-foreground">
-                                      {estimateReadingTime()} min
-                                    </TableCell>
-                                  </TableRow>
-                                ))
-                              ) : (
-                                <TableRow>
-                                  <TableCell
-                                    colSpan={4}
-                                    className="py-8 text-center text-muted-foreground"
-                                  >
-                                    Aucun document. Creez votre premier document.
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
-                        </ScrollArea>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="process" className="mt-4 text-sm text-muted-foreground">
-                      Filtre Process (a venir)
-                    </TabsContent>
-                    <TabsContent value="roles" className="mt-4 text-sm text-muted-foreground">
-                      Filtre Roles (a venir)
-                    </TabsContent>
-                    <TabsContent value="templates" className="mt-4 text-sm text-muted-foreground">
-                      Filtre Templates (a venir)
-                    </TabsContent>
-                  </Tabs>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell
+                                colSpan={4}
+                                className="py-8 text-center text-muted-foreground"
+                              >
+                                Aucun document. Créez votre premier document.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
                 </CardContent>
               </Card>
             </div>
