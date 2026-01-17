@@ -5,7 +5,6 @@ import { DocEditor } from '@/components/docs/doc-editor';
 import { VersionHistory } from '@/components/docs/version-history';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { updateDocument } from '@/lib/actions/documents';
 import type { JSONContent } from '@tiptap/react';
 
 interface Version {
@@ -37,8 +36,16 @@ export function DocEditorWrapper({
   const router = useRouter();
 
   const handleSave = async (title: string, content: JSONContent) => {
-    await updateDocument(docId, title, content);
-    router.refresh();
+    // Use fetch API instead of Server Action to avoid serialization issues
+    const response = await fetch(`/api/documents/${docId}/autosave`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save document');
+    }
   };
 
   return (
