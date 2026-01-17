@@ -1,23 +1,12 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { isAgencyRole, isClientRole } from '@/lib/roles';
 import { hasModule } from '@/lib/modules.server';
-import { DocTree } from '@/components/docs/doc-tree';
 import { DocViewer } from '@/components/docs/doc-viewer';
-import { VersionHistory } from '@/components/docs/version-history';
-import { ShareToggle } from '@/components/docs/share-toggle';
-import { Button } from '@/components/ui/button';
-import { Pencil, Bell } from 'lucide-react';
-import {
-  getFoldersAndDocuments,
-  getDocument,
-  getDocumentVersions
-} from '@/lib/actions/documents';
-import { NotifyButton } from './notify-button';
+import { getDocument } from '@/lib/actions/documents';
 
-// Use Prisma JsonValue instead of @tiptap/react to avoid client module in server component
+// Use local type instead of @tiptap/react to avoid client module in server component
 type JSONContent = Record<string, unknown>;
 
 export default async function SpaceDocumentPage({
@@ -55,7 +44,7 @@ export default async function SpaceDocumentPage({
   const isAgency = isAgencyRole(user.role);
   const isClient = isClientRole(user.role);
 
-  // Vérifier accès
+  // Vérifier accès client
   if (isClient) {
     const membership = await prisma.tenantMembership.findUnique({
       where: { tenantId_userId: { tenantId: spaceId, userId: session.userId } }
@@ -65,6 +54,11 @@ export default async function SpaceDocumentPage({
     }
   }
 
+  // Agence: rediriger vers l'éditeur directement
+  if (isAgency) {
+    redirect(`/spaces/${spaceId}/docs/${docId}/edit`);
+  }
+
   const doc = await getDocument(docId);
 
   if (!doc || doc.tenantId !== spaceId) {
@@ -72,93 +66,20 @@ export default async function SpaceDocumentPage({
   }
 
   // Client ne peut voir que les documents publics
-  if (isClient && !doc.isPublic) {
+  if (!doc.isPublic) {
     redirect(`/spaces/${spaceId}/docs`);
   }
 
-  // Agence: rediriger vers l'éditeur directement
-  if (isAgency) {
-    redirect(`/spaces/${spaceId}/docs/${docId}/edit`);
-  }
-
-  // Pour l'agence: récupérer arborescence et versions
-  let folders: Awaited<ReturnType<typeof getFoldersAndDocuments>>['folders'] = [];
-  let documents: Awaited<ReturnType<typeof getFoldersAndDocuments>>['documents'] = [];
-  let serializedVersions: Array<{
-    id: string;
-    title: string;
-    createdAt: string;
-    createdBy: { id: string; name: string | null; email: string } | null;
-  }> = [];
-
-  if (isAgency) {
-    const [data, v] = await Promise.all([
-      getFoldersAndDocuments(spaceId),
-      getDocumentVersions(docId)
-    ]);
-    folders = data.folders;
-    documents = data.documents;
-    // Versions are already serialized by getDocumentVersions
-    serializedVersions = v;
-  }
-
-  // Vue client simplifiée
-  if (isClient) {
-    return (
-      <div className="space-y-6">
-        <header className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Documents</p>
-          <h1 className="text-2xl font-semibold">{tenant.name}</h1>
-        </header>
-        <div className="rounded-md border p-6">
-          <DocViewer content={doc.content as JSONContent} title={doc.title} />
-        </div>
-      </div>
-    );
-  }
-
-  // Vue agence complète
+  // Vue client simplifiée (lecture seule)
   return (
-    <div className="flex h-full">
-      {/* Sidebar arborescence */}
-      <aside className="w-64 shrink-0 border-r bg-muted/30">
-        <div className="p-4">
-          <h2 className="mb-4 text-lg font-semibold">Documents</h2>
-          <DocTree
-            tenantId={spaceId}
-            folders={folders}
-            documents={documents}
-            currentDocId={docId}
-            basePath={`/spaces/${spaceId}/docs`}
-          />
-        </div>
-      </aside>
-
-      {/* Contenu principal */}
-      <main className="flex-1 overflow-auto">
-        <div className="border-b px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <VersionHistory versions={serializedVersions} currentDocId={docId} />
-              <ShareToggle
-                docId={docId}
-                isPublic={doc.isPublic}
-                publicToken={doc.publicToken}
-              />
-              <NotifyButton docId={docId} />
-            </div>
-            <Button asChild>
-              <Link href={`/spaces/${spaceId}/docs/${docId}/edit`}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Modifier
-              </Link>
-            </Button>
-          </div>
-        </div>
-        <div className="p-6">
-          <DocViewer content={doc.content as JSONContent} title={doc.title} />
-        </div>
-      </main>
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Documents</p>
+        <h1 className="text-2xl font-semibold">{tenant.name}</h1>
+      </header>
+      <div className="rounded-md border p-6">
+        <DocViewer content={doc.content as JSONContent} title={doc.title} />
+      </div>
     </div>
   );
 }
