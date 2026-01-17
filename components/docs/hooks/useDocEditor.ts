@@ -55,8 +55,8 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   const [imageUrl, setImageUrl] = useState('');
 
   // Autosave refs - separate timers for debounce and retry
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef(title);
   const retryCountRef = useRef(0);
   const savingRef = useRef(false); // Synchronous lock to prevent race conditions
@@ -228,6 +228,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
         retryTimerRef.current = null;
       }
       setIsDirty(true);
+      setLastSaveSkipped(false);
     }
   });
 
@@ -268,7 +269,11 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     } catch (error) {
       // Aborted requests (cancelled by a newer save) - no error UI, no retry
       if (error instanceof DOMException && error.name === 'AbortError') {
-        // noop - just unlock and let next save proceed
+        // Clear any pending retry since a newer save will handle it
+        if (retryTimerRef.current) {
+          clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = null;
+        }
       } else {
         console.error('Save failed:', error);
         setSaveError('Erreur de sauvegarde');
@@ -336,6 +341,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
     setIsDirty(true);
+    setLastSaveSkipped(false);
   };
 
   const addLink = () => {
