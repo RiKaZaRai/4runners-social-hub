@@ -31,8 +31,8 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(normalize(value));
 }
 
-function hashContent(content: unknown): string {
-  return createHash('sha256').update(stableStringify(content)).digest('hex');
+function hashString(str: string): string {
+  return createHash('sha256').update(str).digest('hex');
 }
 
 async function verifyDocumentAccess(docId: string, userId: string) {
@@ -90,9 +90,11 @@ export async function POST(
       );
     }
 
-    // Check payload size (bytes, not characters)
-    const contentSize = Buffer.byteLength(JSON.stringify(content), 'utf8');
-    if (contentSize > MAX_CONTENT_SIZE) {
+    // Stable stringify once for size check and hash
+    const newStable = stableStringify({ title: title.trim(), content });
+    const newSize = Buffer.byteLength(newStable, 'utf8');
+
+    if (newSize > MAX_CONTENT_SIZE) {
       return NextResponse.json(
         { error: 'Content too large' },
         { status: 413 }
@@ -113,8 +115,9 @@ export async function POST(
     }
 
     // Check if content actually changed (hash comparison)
-    const currentHash = hashContent({ title: currentDoc.title, content: currentDoc.content });
-    const newHash = hashContent({ title: title.trim(), content });
+    const currentStable = stableStringify({ title: currentDoc.title, content: currentDoc.content });
+    const currentHash = hashString(currentStable);
+    const newHash = hashString(newStable);
 
     if (currentHash === newHash) {
       // No changes, return actual DB updatedAt
