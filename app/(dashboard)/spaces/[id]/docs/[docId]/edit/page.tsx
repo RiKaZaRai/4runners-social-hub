@@ -52,11 +52,8 @@ export default async function SpaceDocEditPage({
     redirect(`/spaces/${spaceId}/docs`);
   }
 
-  // Serialize dates for client component
-  const serializedVersions = versions.map((v: { id: string; title: string; createdAt: Date; createdBy: { id: string; name: string | null; email: string } | null }) => ({
-    ...v,
-    createdAt: v.createdAt.toISOString()
-  }));
+  // Versions are already serialized by getDocumentVersions
+  const serializedVersions = versions;
 
   return (
     <div className="flex h-full">

@@ -423,12 +423,12 @@ export async function getDocumentVersions(docId: string) {
     }
   });
 
-  // Serialize dates for client components
+  // Serialize for client components - plain objects only
   return versions.map((v) => ({
     id: v.id,
     title: v.title,
-    createdAt: v.createdAt,
-    createdBy: v.createdBy
+    createdAt: v.createdAt.toISOString(),
+    createdBy: v.createdBy ? { id: v.createdBy.id, name: v.createdBy.name, email: v.createdBy.email } : null
   }));
 }
 

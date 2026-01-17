@@ -98,10 +98,8 @@ export default async function SpaceDocumentPage({
     ]);
     folders = data.folders;
     documents = data.documents;
-    serializedVersions = v.map((ver: { id: string; title: string; createdAt: Date; createdBy: { id: string; name: string | null; email: string } | null }) => ({
-      ...ver,
-      createdAt: ver.createdAt.toISOString()
-    }));
+    // Versions are already serialized by getDocumentVersions
+    serializedVersions = v;
   }
 
   // Vue client simplifiée
