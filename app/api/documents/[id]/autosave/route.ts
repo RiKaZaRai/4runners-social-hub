@@ -90,6 +90,16 @@ export async function POST(
       );
     }
 
+    // Validate content is JSON-serializable (guard against non-serializable objects)
+    try {
+      JSON.stringify(content);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid content' },
+        { status: 400 }
+      );
+    }
+
     // Stable stringify once for size check and hash
     const newStable = stableStringify({ title: title.trim(), content });
     const newSize = Buffer.byteLength(newStable, 'utf8');
@@ -115,7 +125,8 @@ export async function POST(
     }
 
     // Check if content actually changed (hash comparison)
-    const currentStable = stableStringify({ title: currentDoc.title, content: currentDoc.content });
+    // Use trimmed title for consistency with newStable
+    const currentStable = stableStringify({ title: currentDoc.title.trim(), content: currentDoc.content });
     const currentHash = hashString(currentStable);
     const newHash = hashString(newStable);
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { requireSession } from '@/lib/auth';
 import { isAgencyRole } from '@/lib/roles';
@@ -62,6 +63,13 @@ export async function POST(request: NextRequest) {
         updatedAt: true
       }
     });
+
+    // Revalidate cached pages so other users see the new folder
+    if (tenantId) {
+      revalidatePath(`/spaces/${tenantId}/docs`);
+    } else {
+      revalidatePath('/wiki');
+    }
 
     return NextResponse.json({
       ok: true,
