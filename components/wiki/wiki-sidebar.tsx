@@ -86,8 +86,8 @@ export function WikiSidebar({
                     className={cn(
                       'group flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition',
                       isSectionFullyActive
-                        ? 'border-border/60 bg-background/40'
-                        : 'border-border/60 bg-background/20 hover:bg-background/35'
+                        ? 'border-border bg-muted'
+                        : 'border-border/60 bg-background/20 hover:bg-muted/50'
                     )}
                   >
                     <Icon
@@ -122,10 +122,10 @@ export function WikiSidebar({
                               className={cn(
                                 'flex w-full items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-sm transition',
                                 isFolderFullyActive
-                                  ? 'border-border/60 bg-background/40'
+                                  ? 'border-border bg-muted'
                                   : isFolderExpanded
                                     ? 'border-border/60 bg-background/20'
-                                    : 'border-transparent hover:border-border/60 hover:bg-background/35'
+                                    : 'border-transparent hover:border-border/60 hover:bg-muted/50'
                               )}
                             >
                               <Folder
@@ -152,8 +152,8 @@ export function WikiSidebar({
                                       className={cn(
                                         'flex w-full items-center gap-2 rounded-xl border px-2 py-1 text-left text-xs transition',
                                         isCurrentDoc
-                                          ? 'border-border/60 bg-background/40'
-                                          : 'border-transparent hover:border-border/60 hover:bg-background/35'
+                                          ? 'border-border bg-muted'
+                                          : 'border-transparent hover:border-border/60 hover:bg-muted/50'
                                       )}
                                     >
                                       <FileText
