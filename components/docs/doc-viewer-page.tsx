@@ -14,12 +14,14 @@ import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import Image from '@tiptap/extension-image';
 import Youtube from '@tiptap/extension-youtube';
 import { common, createLowlight } from 'lowlight';
-import { ChevronRight, Hash, AlertTriangle, Info, Pencil } from 'lucide-react';
+import { ChevronRight, Hash, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { WikiSidebar } from '@/components/wiki/wiki-sidebar';
+import type { FolderWithChildren, DocumentSummary } from '@/lib/actions/documents';
 
 const lowlight = createLowlight(common);
 
@@ -37,6 +39,9 @@ interface DocViewerPageProps {
   createdBy: { name: string | null; email: string } | null;
   breadcrumb?: { label: string; href?: string }[];
   basePath: string;
+  // Wiki sidebar data
+  folders: FolderWithChildren[];
+  documents: DocumentSummary[];
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -138,6 +143,8 @@ export function DocViewerPage({
   createdBy,
   breadcrumb = [],
   basePath,
+  folders,
+  documents,
 }: DocViewerPageProps) {
   const router = useRouter();
   const [activeHeading, setActiveHeading] = useState<string | null>(null);
@@ -260,6 +267,14 @@ export function DocViewerPage({
 
   return (
     <div className="flex h-full">
+      {/* Wiki Sidebar */}
+      <WikiSidebar
+        folders={folders}
+        documents={documents}
+        basePath={basePath}
+        currentDocId={docId}
+      />
+
       {/* Main content */}
       <main className="flex-1 overflow-auto">
         <div className="mx-auto max-w-4xl px-6 py-8">

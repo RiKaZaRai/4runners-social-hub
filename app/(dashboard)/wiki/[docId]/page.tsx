@@ -23,7 +23,7 @@ export default async function WikiDocumentPage({
     redirect('/spaces');
   }
 
-  const [doc, { folders }] = await Promise.all([
+  const [doc, { folders, documents }] = await Promise.all([
     getDocument(docId),
     getFoldersAndDocuments(null)
   ]);
@@ -53,14 +53,18 @@ export default async function WikiDocumentPage({
   }
 
   return (
-    <DocViewerPage
-      docId={docId}
-      title={doc.title}
-      content={doc.content as JSONContent}
-      updatedAt={doc.updatedAt.toISOString()}
-      createdBy={doc.createdBy}
-      breadcrumb={breadcrumb}
-      basePath="/wiki"
-    />
+    <div className="h-[calc(100vh-4rem)]">
+      <DocViewerPage
+        docId={docId}
+        title={doc.title}
+        content={doc.content as JSONContent}
+        updatedAt={doc.updatedAt.toISOString()}
+        createdBy={doc.createdBy}
+        breadcrumb={breadcrumb}
+        basePath="/wiki"
+        folders={folders}
+        documents={documents}
+      />
+    </div>
   );
 }
