@@ -299,13 +299,13 @@ export function DocContentView({
 
             {/* Badges + buttons - aligned vertically */}
             <div className="flex flex-wrap items-center gap-3">
-              <Badge variant="secondary" className="rounded-full">
+              <Badge variant="outline" className="rounded-full border-border bg-muted/80 text-foreground">
                 Owner: {ownerName}
               </Badge>
-              <Badge variant="secondary" className="rounded-full">
+              <Badge variant="outline" className="rounded-full border-border bg-muted/80 text-foreground">
                 Maj: {formatRelativeTime(updatedAt)}
               </Badge>
-              <Badge variant="secondary" className="rounded-full">
+              <Badge variant="outline" className="rounded-full border-border bg-muted/80 text-foreground">
                 Lecture: {readingTime} min
               </Badge>
               <div className="ml-auto flex items-center gap-2">
@@ -362,7 +362,7 @@ export function DocContentView({
           </div>
 
           {/* Document content */}
-          <div className="p-5 pt-0">
+          <div className={cn("p-5 pt-0", isEditing && "px-8")}>
             {isEditing && editor && (
               <>
                 <BubbleMenu editor={editor} onOpenLinkDialog={openLinkDialog} />
