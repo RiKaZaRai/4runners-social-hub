@@ -34,8 +34,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
-        <aside className="flex w-64 flex-col border-r border-border bg-card/60">
-          <div className="border-b border-border px-5 py-5">
+        <aside className="flex w-64 flex-col bg-card/60">
+          <div className="px-5 py-5">
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">4runners</p>
             <h1 className="text-lg font-semibold">Social Hub</h1>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -72,7 +72,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </div>
 
             {/* Section Espaces */}
-            <div className="rounded-xl border border-border bg-card px-3 py-3">
+            <div className="rounded-xl bg-muted/30 px-3 py-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   Espaces
@@ -109,7 +109,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     );
                   })}
                 {spacesPreview.length === 0 && (
-                  <li className="rounded-md border border-dashed border-border px-2 py-2 text-xs text-muted-foreground">
+                  <li className="rounded-md bg-muted/50 px-2 py-2 text-xs text-muted-foreground">
                     Aucun espace.
                   </li>
                 )}
@@ -140,7 +140,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="flex items-center justify-between border-b border-border bg-card/80 px-6 py-4">
+          <header className="flex items-center justify-between bg-card/80 px-6 py-4">
             <div className="flex items-center gap-3">
               <Input
                 className="w-[280px] rounded-full bg-background"

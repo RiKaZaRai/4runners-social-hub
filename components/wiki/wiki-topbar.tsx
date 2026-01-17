@@ -81,11 +81,11 @@ export function WikiTopbar({ index, onOpen, onNewFolder, onNewDocument }: WikiTo
   };
 
   return (
-    <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center justify-between gap-4 px-4 py-3">
         {/* Title */}
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
             <FileText className="h-4 w-4" />
           </div>
           <div>
@@ -122,7 +122,7 @@ export function WikiTopbar({ index, onOpen, onNewFolder, onNewDocument }: WikiTo
               ref={resultsRef}
               id="wiki-search-results"
               role="listbox"
-              className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border bg-popover shadow-lg"
+              className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg bg-popover shadow-lg"
             >
               {results.map((result, idx) => (
                 <button

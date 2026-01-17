@@ -25,9 +25,9 @@ export function WikiSidebarTree({
   const hasContent = sections.length > 0 && sections.some((s) => s.nodes.length > 0);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-card">
+    <div className="flex h-full flex-col overflow-hidden rounded-lg bg-card">
       {/* Header */}
-      <div className="border-b p-4">
+      <div className="p-4">
         <div className="text-sm font-semibold">Navigation Wiki</div>
         <div className="mt-1 text-xs text-muted-foreground">
           Parcourez vos documents et dossiers
@@ -91,7 +91,7 @@ function SectionItem({ section, activeId, openMap, onToggleOpen, onSelect }: Sec
     <div className="mb-2">
       <button
         onClick={() => onToggleOpen(section.id)}
-        className="flex w-full items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-left hover:bg-muted/50"
+        className="flex w-full items-center justify-between gap-2 rounded-md bg-muted/30 px-3 py-2 text-left hover:bg-muted/50"
       >
         <div className="flex items-center gap-2">
           <Folder className="h-4 w-4 text-muted-foreground" />

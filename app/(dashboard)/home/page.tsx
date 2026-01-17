@@ -79,7 +79,7 @@ export default async function HomePage() {
         </Card>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
+      <div className="rounded-2xl bg-muted/30 p-6 text-sm text-muted-foreground">
         Ajoutez vos widgets métiers ici : prochains posts, validations en attente,
         jobs récents, etc.
       </div>

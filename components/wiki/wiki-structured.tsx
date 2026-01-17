@@ -264,7 +264,7 @@ export function WikiStructured({ folders, documents, basePath, tenantId = null }
         </aside>
 
         {/* Content area */}
-        <main className="flex-1 overflow-auto rounded-lg border bg-card p-4">
+        <main className="flex-1 overflow-auto rounded-lg bg-card p-4">
           {/* Breadcrumbs + view indicator */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <WikiBreadcrumbs trail={trail} onSelect={open} />

@@ -229,8 +229,8 @@ export default async function SpacesPage({
               {tenants.map((tenant) => (
                 <div
                   key={tenant.id}
-                  className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 transition ${
-                    tenant.id === activeTenantId ? 'bg-muted/70' : 'hover:bg-muted'
+                  className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 transition ${
+                    tenant.id === activeTenantId ? 'bg-muted' : 'hover:bg-muted/50'
                   } ${!tenant.active ? 'opacity-60' : ''}`}
                 >
                   <Link
@@ -296,7 +296,7 @@ export default async function SpacesPage({
                 </div>
                 <div className="grid gap-3">
                   {activeTenant.channels.map((channel) => (
-                    <div key={channel.id} className="rounded-md border px-3 py-2 text-sm">
+                    <div key={channel.id} className="rounded-md bg-muted/30 px-3 py-2 text-sm">
                       <div className="font-medium uppercase">{channel.network}</div>
                       <div className="text-muted-foreground">{channel.handle || 'Sans handle'}</div>
                       {channel.url && (
@@ -321,7 +321,7 @@ export default async function SpacesPage({
                     <label className="block text-sm text-muted-foreground">Reseau</label>
                     <select
                       name="network"
-                      className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                      className="h-10 w-full rounded-md bg-muted/30 px-3 text-sm"
                       defaultValue="linkedin"
                     >
                       <option value="linkedin">LinkedIn</option>

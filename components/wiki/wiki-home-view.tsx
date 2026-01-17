@@ -60,7 +60,7 @@ export function WikiHomeView({ documents, recentDocs, onOpen }: WikiHomeViewProp
                   <button
                     key={doc.id}
                     onClick={() => onOpen(doc.id)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3 text-left transition-colors hover:bg-muted/50"
+                    className="flex w-full items-center justify-between gap-3 rounded-lg bg-muted/30 p-3 text-left transition-colors hover:bg-muted/50"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -93,13 +93,13 @@ export function WikiHomeView({ documents, recentDocs, onOpen }: WikiHomeViewProp
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg border bg-muted/30 p-4 text-center">
+                <div className="rounded-lg bg-muted/30 p-4 text-center">
                   <div className="text-3xl font-bold">{documents.length}</div>
                   <div className="text-sm text-muted-foreground">
                     {documents.length === 1 ? 'Document' : 'Documents'}
                   </div>
                 </div>
-                <div className="rounded-lg border bg-muted/30 p-4 text-center">
+                <div className="rounded-lg bg-muted/30 p-4 text-center">
                   <div className="text-3xl font-bold">{recentDocs.length}</div>
                   <div className="text-sm text-muted-foreground">
                     Modifiés récemment
