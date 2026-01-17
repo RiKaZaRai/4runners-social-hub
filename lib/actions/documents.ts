@@ -173,7 +173,8 @@ export async function createFolder(
       tenantId,
       parentId,
       name: name.trim()
-    }
+    },
+    select: { id: true, name: true, parentId: true, sortOrder: true }
   });
 
   if (tenantId) {
@@ -182,7 +183,13 @@ export async function createFolder(
     revalidatePath('/wiki');
   }
 
-  return folder;
+  // Return serialized object
+  return {
+    id: folder.id,
+    name: folder.name,
+    parentId: folder.parentId,
+    sortOrder: folder.sortOrder
+  };
 }
 
 export async function renameFolder(folderId: string, name: string) {
@@ -191,7 +198,8 @@ export async function renameFolder(folderId: string, name: string) {
 
   const folder = await prisma.docFolder.update({
     where: { id: folderId },
-    data: { name: name.trim() }
+    data: { name: name.trim() },
+    select: { id: true, name: true, parentId: true, sortOrder: true, tenantId: true }
   });
 
   if (folder.tenantId) {
@@ -200,7 +208,13 @@ export async function renameFolder(folderId: string, name: string) {
     revalidatePath('/wiki');
   }
 
-  return folder;
+  // Return serialized object
+  return {
+    id: folder.id,
+    name: folder.name,
+    parentId: folder.parentId,
+    sortOrder: folder.sortOrder
+  };
 }
 
 export async function deleteFolder(folderId: string) {
@@ -232,7 +246,8 @@ export async function moveFolder(folderId: string, newParentId: string | null) {
 
   const folder = await prisma.docFolder.update({
     where: { id: folderId },
-    data: { parentId: newParentId }
+    data: { parentId: newParentId },
+    select: { id: true, name: true, parentId: true, sortOrder: true, tenantId: true }
   });
 
   if (folder.tenantId) {
@@ -241,7 +256,13 @@ export async function moveFolder(folderId: string, newParentId: string | null) {
     revalidatePath('/wiki');
   }
 
-  return folder;
+  // Return serialized object
+  return {
+    id: folder.id,
+    name: folder.name,
+    parentId: folder.parentId,
+    sortOrder: folder.sortOrder
+  };
 }
 
 // ============================================
@@ -279,7 +300,8 @@ export async function createDocument(
       content: emptyContent as Prisma.InputJsonValue,
       createdById: session.userId,
       updatedById: session.userId
-    }
+    },
+    select: { id: true, title: true, folderId: true, content: true, updatedAt: true }
   });
 
   // InboxItem si espace client
@@ -290,7 +312,14 @@ export async function createDocument(
     revalidatePath('/wiki');
   }
 
-  return doc;
+  // Return serialized object
+  return {
+    id: doc.id,
+    title: doc.title,
+    folderId: doc.folderId,
+    content: JSON.parse(JSON.stringify(doc.content)),
+    updatedAt: doc.updatedAt.toISOString()
+  };
 }
 
 export async function updateDocument(
@@ -342,7 +371,8 @@ export async function updateDocument(
       title: title.trim(),
       content: content as Prisma.InputJsonValue,
       updatedById: session.userId
-    }
+    },
+    select: { id: true, title: true, updatedAt: true }
   });
 
   if (currentDoc.tenantId) {
@@ -393,7 +423,8 @@ export async function moveDocument(docId: string, folderId: string | null) {
 
   const doc = await prisma.document.update({
     where: { id: docId },
-    data: { folderId }
+    data: { folderId },
+    select: { id: true, title: true, folderId: true, tenantId: true, updatedAt: true }
   });
 
   if (doc.tenantId) {
@@ -402,7 +433,13 @@ export async function moveDocument(docId: string, folderId: string | null) {
     revalidatePath('/wiki');
   }
 
-  return doc;
+  // Return serialized object
+  return {
+    id: doc.id,
+    title: doc.title,
+    folderId: doc.folderId,
+    updatedAt: doc.updatedAt.toISOString()
+  };
 }
 
 // ============================================
@@ -416,10 +453,11 @@ export async function getDocumentVersions(docId: string) {
   const versions = await prisma.documentVersion.findMany({
     where: { documentId: docId },
     orderBy: { createdAt: 'desc' },
-    include: {
-      createdBy: {
-        select: { id: true, name: true, email: true }
-      }
+    select: {
+      id: true,
+      title: true,
+      createdAt: true,
+      createdBy: { select: { id: true, name: true, email: true } }
     }
   });
 
@@ -437,7 +475,7 @@ export async function restoreVersion(versionId: string) {
 
   const version = await prisma.documentVersion.findUnique({
     where: { id: versionId },
-    include: { document: true }
+    select: { documentId: true, title: true, content: true }
   });
 
   if (!version) throw new Error('VERSION_NOT_FOUND');
@@ -451,7 +489,8 @@ export async function restoreVersion(versionId: string) {
       title: version.title,
       content: version.content as Prisma.InputJsonValue,
       updatedById: session.userId
-    }
+    },
+    select: { id: true, title: true, tenantId: true, updatedAt: true }
   });
 
   // InboxItem si espace client
@@ -464,7 +503,12 @@ export async function restoreVersion(versionId: string) {
     revalidatePath(`/wiki/${doc.id}`);
   }
 
-  return doc;
+  // Return serialized object
+  return {
+    id: doc.id,
+    title: doc.title,
+    updatedAt: doc.updatedAt.toISOString()
+  };
 }
 
 // ============================================
@@ -490,7 +534,8 @@ export async function togglePublicShare(docId: string, enabled: boolean) {
     data: {
       isPublic: enabled,
       publicToken
-    }
+    },
+    select: { id: true, isPublic: true, publicToken: true, updatedAt: true }
   });
 
   // InboxItem si partage activé et espace client
@@ -504,7 +549,13 @@ export async function togglePublicShare(docId: string, enabled: boolean) {
     revalidatePath(`/wiki/${docId}`);
   }
 
-  return updated;
+  // Return serialized object
+  return {
+    id: updated.id,
+    isPublic: updated.isPublic,
+    publicToken: updated.publicToken,
+    updatedAt: updated.updatedAt.toISOString()
+  };
 }
 
 // ============================================
@@ -552,6 +603,7 @@ export async function getFoldersAndDocuments(tenantId: string | null) {
 
   const folders = await prisma.docFolder.findMany({
     where: { tenantId },
+    select: { id: true, name: true, parentId: true, sortOrder: true },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }]
   });
 
@@ -566,7 +618,7 @@ export async function getFoldersAndDocuments(tenantId: string | null) {
     orderBy: { title: 'asc' }
   });
 
-  // Construire l'arborescence des dossiers
+  // Construire l'arborescence des dossiers (folders already plain objects from select)
   const buildTree = (parentId: string | null): FolderWithChildren[] => {
     return folders
       .filter((f) => f.parentId === parentId)
@@ -609,6 +661,7 @@ export async function getFoldersAndDocumentsFull(tenantId: string | null) {
 
   const folders = await prisma.docFolder.findMany({
     where: { tenantId },
+    select: { id: true, name: true, parentId: true, sortOrder: true },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }]
   });
 
@@ -625,7 +678,7 @@ export async function getFoldersAndDocumentsFull(tenantId: string | null) {
     orderBy: { title: 'asc' }
   });
 
-  // Construire l'arborescence des dossiers
+  // Construire l'arborescence des dossiers (folders already plain objects from select)
   const buildTree = (parentId: string | null): FolderWithChildren[] => {
     return folders
       .filter((f) => f.parentId === parentId)
