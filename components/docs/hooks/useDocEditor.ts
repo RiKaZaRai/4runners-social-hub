@@ -58,6 +58,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   const titleRef = useRef(title);
   const retryCountRef = useRef(0);
   const savingRef = useRef(false); // Synchronous lock to prevent race conditions
+  const readOnlyRef = useRef(readOnly);
 
   const editor = useEditor({
     extensions: [
@@ -223,10 +224,14 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     }
   });
 
-  // Keep titleRef in sync
+  // Keep refs in sync
   useEffect(() => {
     titleRef.current = title;
   }, [title]);
+
+  useEffect(() => {
+    readOnlyRef.current = readOnly;
+  }, [readOnly]);
 
   const handleSave = useCallback(async () => {
     if (!editor || savingRef.current) return;
@@ -259,12 +264,12 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
         const jitter = 0.8 + Math.random() * 0.4;
         const delayWithJitter = baseDelay * jitter;
 
-        // Schedule retry - call handleSave directly
+        // Schedule retry (skip if readOnly changed)
         if (autosaveTimerRef.current) {
           clearTimeout(autosaveTimerRef.current);
         }
         autosaveTimerRef.current = setTimeout(() => {
-          handleSave();
+          if (!readOnlyRef.current) handleSave();
         }, delayWithJitter);
       }
     } finally {
