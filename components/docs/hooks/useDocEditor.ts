@@ -45,6 +45,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastSaveSkipped, setLastSaveSkipped] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Dialog states
@@ -257,6 +258,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
       setIsDirty(false);
       // Use server's updatedAt for accurate timestamp
       setLastSaved(new Date(result.updatedAt));
+      setLastSaveSkipped(result.skipped);
       retryCountRef.current = 0; // Reset retry count on success
       // Clear any pending retry timer
       if (retryTimerRef.current) {
@@ -375,6 +377,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     isSaving,
     isDirty,
     lastSaved,
+    lastSaveSkipped,
     saveError,
     handleSave,
 

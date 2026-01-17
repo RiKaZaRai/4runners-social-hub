@@ -40,6 +40,7 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
     isSaving,
     isDirty,
     lastSaved,
+    lastSaveSkipped,
     saveError,
     showLinkDialog,
     setShowLinkDialog,
@@ -72,9 +73,16 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
         {!readOnly && (
           <span className="text-xs text-muted-foreground">
             {saveError ? (
-              <span className="flex items-center gap-1 text-red-500">
-                <AlertCircle className="h-3 w-3" />
-                {saveError}
+              <span className="flex flex-col items-end gap-0.5">
+                <span className="flex items-center gap-1 text-red-500">
+                  <AlertCircle className="h-3 w-3" />
+                  {saveError}
+                </span>
+                {lastSaved && (
+                  <span className="text-muted-foreground">
+                    Derniere sauvegarde a {formatTime(lastSaved)}
+                  </span>
+                )}
               </span>
             ) : isSaving ? (
               'Sauvegarde en cours...'
@@ -83,7 +91,7 @@ export function DocEditor({ initialContent, initialTitle, onSave, readOnly = fal
             ) : lastSaved ? (
               <span className="flex items-center gap-1 text-green-600">
                 <Check className="h-3 w-3" />
-                Sauvegarde a {formatTime(lastSaved)}
+                {lastSaveSkipped ? 'A jour' : `Sauvegarde a ${formatTime(lastSaved)}`}
               </span>
             ) : null}
           </span>
