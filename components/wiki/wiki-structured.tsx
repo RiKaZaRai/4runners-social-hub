@@ -466,7 +466,21 @@ export function WikiStructured({
         setInputValue('');
         setDocSection('');
         setDocFolderId(null);
-        router.push(`${basePath}/${doc.id}/edit`);
+        // Select the new document inline (no navigation)
+        if (docFolderId) {
+          const folder = folders.find((f) => f.id === docFolderId);
+          if (folder) {
+            const section = getFolderSection(folder);
+            if (section) {
+              setSelectedSection(section.id);
+              setExpandedSections((prev) => ({ ...prev, [section.id]: true }));
+            }
+            setSelectedFolderId(docFolderId);
+            setExpandedFolders((prev) => ({ ...prev, [docFolderId]: true }));
+          }
+        }
+        setSelectedDocId(doc.id);
+        router.refresh();
       } catch (error) {
         console.error('Failed to create document:', error);
       }
