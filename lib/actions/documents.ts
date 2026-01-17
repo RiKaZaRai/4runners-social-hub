@@ -4,8 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { requireSession } from '@/lib/auth';
 import { isAgencyRole } from '@/lib/roles';
-import type { JSONContent } from '@tiptap/react';
 import type { Prisma } from '@prisma/client';
+
+// Use a generic JSON type instead of importing from @tiptap/react (client module)
+type EditorContent = Prisma.JsonValue;
 
 // ============================================
 // Types
@@ -252,7 +254,7 @@ export async function createDocument(
     throw new Error('ACCESS_DENIED');
   }
 
-  const emptyContent: JSONContent = {
+  const emptyContent = {
     type: 'doc',
     content: [{ type: 'paragraph' }]
   };
@@ -282,7 +284,7 @@ export async function createDocument(
 export async function updateDocument(
   docId: string,
   title: string,
-  content: JSONContent
+  content: EditorContent
 ) {
   const session = await requireSession();
   const { doc } = await verifyDocumentAccess(docId, session.userId);
