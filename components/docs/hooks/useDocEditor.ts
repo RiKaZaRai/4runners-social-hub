@@ -242,6 +242,12 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   const handleSave = useCallback(async () => {
     if (!editor || savingRef.current) return;
 
+    // Clear any pending debounce to avoid duplicate saves
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
     savingRef.current = true;
     setIsSaving(true);
     setSaveError(null);
@@ -308,6 +314,7 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
       }
     };
   }, [isDirty, readOnly, editor, handleSave]);
