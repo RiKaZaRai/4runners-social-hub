@@ -356,6 +356,11 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
   }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Cancel any pending retry to avoid saving stale content
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
     setTitle(e.target.value);
     retryCountRef.current = 0; // Reset backoff on user activity
     setIsDirty(true);
