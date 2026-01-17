@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Search,
   FolderPlus,
@@ -31,6 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewFolderDialog } from '@/components/docs/dialogs/folder-dialogs';
 import { NewDocumentDialog } from '@/components/docs/dialogs/document-dialogs';
 import { cn } from '@/lib/utils';
@@ -194,6 +195,7 @@ export function WikiStructured({
   tenantId = null,
 }: WikiStructuredProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
@@ -225,6 +227,22 @@ export function WikiStructured({
   const [query, setQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Table filter state (for documents table section filter)
+  const [tableFilter, setTableFilter] = useState<string>('all');
+
+  // Reset view when navigating to overview (via ?reset param)
+  useEffect(() => {
+    const reset = searchParams.get('reset');
+    if (reset) {
+      setSelectedSection(null);
+      setSelectedFolderId(null);
+      setSelectedDocId(null);
+      setTableFilter('all');
+      // Clean the URL
+      router.replace(basePath);
+    }
+  }, [searchParams, basePath, router]);
 
   // Build flat index for search
   const index = useMemo(() => buildWikiIndex(folders, documents), [folders, documents]);
@@ -309,12 +327,28 @@ export function WikiStructured({
     return contextDocuments.slice(0, 3);
   }, [contextDocuments]);
 
-  // All docs for table - filtered by context
+  // Helper to get section ID for a document
+  const getDocSection = useCallback((doc: DocumentFull): string | null => {
+    if (!doc.folderId) return null;
+    const folder = findFolderById(folders, doc.folderId);
+    if (!folder) return null;
+    const section = getFolderSection(folder);
+    return section?.id || null;
+  }, [folders]);
+
+  // All docs for table - filtered by context and table filter
   const allDocs = useMemo(() => {
-    return [...contextDocuments].sort(
+    let docs = [...contextDocuments];
+
+    // Apply section filter if not 'all' and we're in overview mode (no section/folder selected)
+    if (tableFilter !== 'all' && !selectedSection && !selectedFolderId) {
+      docs = docs.filter((doc) => getDocSection(doc) === tableFilter);
+    }
+
+    return docs.sort(
       (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
-  }, [contextDocuments]);
+  }, [contextDocuments, tableFilter, selectedSection, selectedFolderId, getDocSection]);
 
   // Last update date in current context
   const lastUpdateDate = useMemo(() => {
@@ -992,7 +1026,24 @@ export function WikiStructured({
               {/* Documents table */}
               <Card className="rounded-2xl border border-border/70 bg-card/80 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-extrabold">Documents</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-extrabold">Documents</CardTitle>
+                    {/* Section filter tabs - only in overview mode */}
+                    {!selectedSection && !selectedFolderId && (
+                      <Tabs value={tableFilter} onValueChange={setTableFilter}>
+                        <TabsList className="h-8">
+                          <TabsTrigger value="all" className="text-xs px-2 py-1">
+                            Tous
+                          </TabsTrigger>
+                          {wikiSections.map((section) => (
+                            <TabsTrigger key={section.id} value={section.id} className="text-xs px-2 py-1">
+                              {section.label}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                      </Tabs>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="rounded-xl border border-border/60 bg-background/15">

@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { Building2, Home, Inbox, Settings, Link2, FileText } from 'lucide-react';
+import { Building2, Home, Inbox, Settings, Link2 } from 'lucide-react';
+import { NavLink } from '@/components/nav-link';
+import { WikiNavLink } from '@/components/wiki/wiki-nav-link';
 import { requireSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -48,27 +50,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <nav className="flex-1 space-y-6 px-4 py-5 text-sm">
             {/* Menu principal - usage quotidien uniquement */}
             <div className="space-y-1">
-              <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/home">
-                <Home className="h-4 w-4" />
+              <NavLink href="/home" icon={Home}>
                 Accueil
-              </Link>
-              <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/inbox">
-                <Inbox className="h-4 w-4" />
+              </NavLink>
+              <NavLink href="/inbox" icon={Inbox}>
                 Inbox
-              </Link>
-              <Link
-                className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"
-                href={isClient ? '/posts' : '/spaces'}
-              >
-                <Building2 className="h-4 w-4" />
+              </NavLink>
+              <NavLink href={isClient ? '/posts' : '/spaces'} icon={Building2}>
                 Espaces
-              </Link>
-              {!isClient && (
-                <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/wiki">
-                  <FileText className="h-4 w-4" />
-                  Wiki
-                </Link>
-              )}
+              </NavLink>
+              {!isClient && <WikiNavLink />}
             </div>
 
             {/* Section Espaces */}
@@ -130,10 +121,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <p className="px-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   Administration
                 </p>
-                <Link className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted" href="/settings">
-                  <Settings className="h-4 w-4" />
+                <NavLink href="/settings" icon={Settings}>
                   Parametres
-                </Link>
+                </NavLink>
               </div>
             )}
           </nav>
