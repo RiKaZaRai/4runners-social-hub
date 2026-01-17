@@ -277,7 +277,8 @@ export function useDocEditor({ initialContent, initialTitle, onSave, readOnly = 
         }
       } else {
         console.error('Save failed:', error);
-        setSaveError('Erreur de sauvegarde');
+        const message = error instanceof Error ? error.message : 'Erreur de sauvegarde';
+        setSaveError(message);
 
         // Exponential backoff with jitter for retry
         retryCountRef.current += 1;

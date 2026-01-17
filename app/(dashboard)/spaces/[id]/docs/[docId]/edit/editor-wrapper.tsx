@@ -39,7 +39,10 @@ export function DocEditorWrapper({
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => abortRef.current?.abort();
+    return () => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+    };
   }, []);
 
   const handleSave = async (title: string, content: JSONContent) => {
@@ -55,10 +58,21 @@ export function DocEditorWrapper({
     });
 
     if (!response.ok) {
-      throw new Error('Failed to save document');
+      let message = 'Erreur de sauvegarde';
+      try {
+        const data = await response.json();
+        if (typeof data?.error === 'string') message = data.error;
+      } catch {
+        // Keep default message
+      }
+      throw new Error(message);
     }
 
-    return response.json();
+    return response.json() as Promise<{
+      ok: boolean;
+      skipped: boolean;
+      updatedAt: string;
+    }>;
   };
 
   return (
