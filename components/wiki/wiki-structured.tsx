@@ -185,6 +185,7 @@ export function WikiStructured({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
@@ -333,8 +334,14 @@ export function WikiStructured({
     setSelectedFolderId(null); // Clear folder selection when selecting a section
   };
 
+  // Toggle folder expand/collapse
+  const toggleFolder = (folderId: string) => {
+    setExpandedFolders((prev) => ({ ...prev, [folderId]: !prev[folderId] }));
+  };
+
   // Handle folder click
   const handleFolderClick = (folderId: string, sectionId: string) => {
+    toggleFolder(folderId);
     setSelectedFolderId(folderId);
     setSelectedSection(sectionId); // Keep section context
   };
@@ -468,21 +475,38 @@ export function WikiStructured({
                         <div className="ml-4 mt-2 space-y-1 border-l border-border/50 pl-3">
                           {sectionFolders.map((folder) => {
                             const isFolderSelected = selectedFolderId === folder.id;
+                            const isFolderExpanded = expandedFolders[folder.id];
+                            const folderDocs = documents.filter((d) => d.folderId === folder.id);
                             return (
-                              <button
-                                key={folder.id}
-                                onClick={() => handleFolderClick(folder.id, section.id)}
-                                className={cn(
-                                  'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition',
-                                  isFolderSelected
-                                    ? 'bg-primary/10 text-primary'
-                                    : 'text-muted-foreground hover:bg-background/35 hover:text-foreground'
+                              <div key={folder.id}>
+                                <button
+                                  onClick={() => handleFolderClick(folder.id, section.id)}
+                                  className={cn(
+                                    'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition',
+                                    isFolderSelected
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'text-muted-foreground hover:bg-background/35 hover:text-foreground'
+                                  )}
+                                >
+                                  <Folder className="h-3.5 w-3.5" />
+                                  <span className="truncate">{folder.name.replace(/^\[.*?\]\s*/, '')}</span>
+                                  {isFolderSelected && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+                                </button>
+                                {isFolderExpanded && folderDocs.length > 0 && (
+                                  <div className="ml-4 mt-1 space-y-0.5 border-l border-border/40 pl-2">
+                                    {folderDocs.map((doc) => (
+                                      <button
+                                        key={doc.id}
+                                        onClick={() => router.push(`${basePath}/${doc.id}`)}
+                                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-muted-foreground transition hover:bg-background/35 hover:text-foreground"
+                                      >
+                                        <FileText className="h-3 w-3" />
+                                        <span className="truncate">{doc.title}</span>
+                                      </button>
+                                    ))}
+                                  </div>
                                 )}
-                              >
-                                <Folder className="h-3.5 w-3.5" />
-                                <span className="truncate">{folder.name.replace(/^\[.*?\]\s*/, '')}</span>
-                                {isFolderSelected && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
-                              </button>
+                              </div>
                             );
                           })}
                           {sectionFolders.length === 0 && (
