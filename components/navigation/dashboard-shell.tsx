@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CsrfInput } from '@/components/csrf-input';
 import { NavProvider, MainSidebar, useNav } from '@/components/navigation';
+import { GlobalSecondarySidebar } from '@/components/navigation/global-secondary-sidebar';
+import type { FolderWithChildren, DocumentSummary } from '@/lib/actions/documents';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -17,6 +19,10 @@ interface DashboardShellProps {
     modules: string[];
   }>;
   canCreateClients: boolean;
+  wikiData: {
+    folders: FolderWithChildren[];
+    documents: DocumentSummary[];
+  } | null;
 }
 
 function DashboardContent({
@@ -25,7 +31,8 @@ function DashboardContent({
   isClient,
   isAdmin,
   spacesPreview,
-  canCreateClients
+  canCreateClients,
+  wikiData
 }: DashboardShellProps) {
   const { isCompactMode } = useNav();
 
@@ -41,6 +48,9 @@ function DashboardContent({
         spacesPreview={spacesPreview}
         canCreateClients={canCreateClients}
       />
+
+      {/* Global secondary sidebar */}
+      <GlobalSecondarySidebar wikiData={wikiData} />
 
       <div className={`flex min-h-screen flex-1 flex-col transition-[margin] duration-200 ${mainMargin}`}>
         <header className="flex items-center justify-between bg-card/80 px-6 py-4">

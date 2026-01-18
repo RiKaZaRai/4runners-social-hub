@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { canCreateClients, isAgencyAdmin, isClientRole } from '@/lib/roles';
 import { normalizeModules } from '@/lib/modules';
 import { DashboardShell } from '@/components/navigation';
+import { getFoldersAndDocuments } from '@/lib/actions/documents';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
     currentUser?.email ||
     '';
 
+  // Load wiki data for global secondary sidebar (only for non-clients)
+  let wikiData = null;
+  if (!isClient) {
+    try {
+      wikiData = await getFoldersAndDocuments(null);
+    } catch (error) {
+      // Fail silently if wiki data can't be loaded
+      console.error('Failed to load wiki data for global sidebar:', error);
+    }
+  }
+
   return (
     <DashboardShell
       userName={userName}
@@ -45,6 +57,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       isAdmin={isAdmin}
       spacesPreview={spacesPreview}
       canCreateClients={canCreateClients(currentUser?.role)}
+      wikiData={wikiData}
     >
       {children}
     </DashboardShell>

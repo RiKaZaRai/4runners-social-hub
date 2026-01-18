@@ -637,15 +637,12 @@ export function WikiStructured({
     });
   };
 
-  // In compact mode, show sidebar if:
-  // - Secondary is pinned, OR
-  // - Secondary is visible from hover
-  const showSidebar = isCompactMode
-    ? (isSecondaryPinned || isSecondaryVisible)
-    : true;
+  // In compact mode, sidebar is handled globally - don't render it here
+  // In comfort mode, sidebar is part of the page layout
+  const showSidebar = !isCompactMode;
 
   // Grid classes based on mode
-  // In compact mode, sidebar is fixed, so grid is always 1 column
+  // In compact mode, sidebar is global/fixed, so grid is always 1 column
   // In comfort mode, sidebar is sticky and part of the grid
   const gridClasses = cn(
     'grid h-full',
@@ -658,41 +655,10 @@ export function WikiStructured({
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(900px_520px_at_18%_8%,rgba(59,130,246,0.10),transparent_62%),radial-gradient(780px_460px_at_82%_16%,rgba(139,92,246,0.08),transparent_62%)] bg-background" />
 
       <div className={gridClasses}>
-        {/* SIDEBAR */}
+        {/* SIDEBAR - Only in comfort mode (compact mode uses global sidebar) */}
         {showSidebar && (
-        <aside
-          className={cn(
-            'h-screen border-r border-border/50 bg-secondary/60 backdrop-blur-sm',
-            isCompactMode
-              ? 'fixed inset-y-0 left-[72px] z-30 w-[280px] transition-transform duration-200'
-              : 'sticky top-0'
-          )}
-          onMouseLeave={() => {
-            if (isCompactMode && !isSecondaryPinned) {
-              hideSecondary();
-            }
-          }}
-        >
-          {/* Pin button in compact mode */}
-          {isCompactMode && (
-            <button
-              onClick={toggleSecondaryPinned}
-              className={cn(
-                'absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-md border transition',
-                isSecondaryPinned
-                  ? 'border-primary/30 bg-primary/10 text-primary'
-                  : 'border-border/60 bg-background/50 text-muted-foreground hover:text-foreground'
-              )}
-              title={isSecondaryPinned ? 'Détacher le menu' : 'Épingler le menu'}
-            >
-              {isSecondaryPinned ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
-                <ChevronRightIcon className="h-4 w-4" />
-              )}
-            </button>
-          )}
-          <div className={cn('p-4', isCompactMode && 'pt-10')}>
+        <aside className="sticky top-0 h-screen border-r border-border/50 bg-secondary/60 backdrop-blur-sm">
+          <div className="p-4">
             <div className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm">
               <div className="flex items-center gap-2">
                 <div className="grid h-9 w-9 place-items-center rounded-xl border border-border/70 bg-background/40">
