@@ -43,7 +43,7 @@ export function MainSidebar({
   canCreateClients
 }: MainSidebarProps) {
   const pathname = usePathname();
-  const { isCompactMode, showSecondary, activePrimaryItem } = useNav();
+  const { isCompactMode, showSecondary, activePrimaryItem, setActivePrimaryItem } = useNav();
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter menu items based on user role
@@ -100,6 +100,16 @@ export function MainSidebar({
     // Don't hide immediately - let the secondary sidebar handle it
   }, [isCompactMode]);
 
+  // Handle click - reset activePrimaryItem for items without secondary menu
+  const handleClick = useCallback(
+    (itemId: string, hasSecondary: boolean) => {
+      if (!hasSecondary) {
+        setActivePrimaryItem(null);
+      }
+    },
+    [setActivePrimaryItem]
+  );
+
   // Render compact mode (< 1520px)
   if (isCompactMode) {
     return (
@@ -119,6 +129,7 @@ export function MainSidebar({
               <Link
                 key={item.id}
                 href={item.href}
+                onClick={() => handleClick(item.id, hasSecondary)}
                 onMouseEnter={() => handleMouseEnter(item.id, hasSecondary)}
                 onMouseLeave={handleMouseLeave}
                 className={cn(
@@ -154,6 +165,7 @@ export function MainSidebar({
               <div className="mb-2 h-px w-8 bg-border/50" />
               <Link
                 href="/settings"
+                onClick={() => handleClick('settings', false)}
                 className={cn(
                   'group flex w-full flex-col items-center gap-1 rounded-xl border px-2 py-2 text-center transition',
                   isActive('/settings')
