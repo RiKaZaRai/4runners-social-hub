@@ -148,10 +148,10 @@ export function MainSidebar({
             );
           })}
 
-          {/* Settings for admin */}
+          {/* Settings for admin - pushed to bottom */}
           {isAdmin && (
-            <>
-              <div className="my-2 h-px w-8 bg-border/50" />
+            <div className="mt-auto pt-4">
+              <div className="mb-2 h-px w-8 bg-border/50" />
               <Link
                 href="/settings"
                 className={cn(
@@ -178,7 +178,7 @@ export function MainSidebar({
                   Params
                 </span>
               </Link>
-            </>
+            </div>
           )}
         </nav>
       </aside>
@@ -196,7 +196,7 @@ export function MainSidebar({
         <p className="mt-1 text-xs text-muted-foreground">{userName}</p>
       </div>
 
-      <nav className="flex-1 space-y-6 px-4 py-5 text-sm">
+      <nav className="flex flex-1 flex-col px-4 py-5 text-sm">
         {/* Menu principal */}
         <div className="space-y-1">
           {items.map((item) => {
@@ -228,7 +228,7 @@ export function MainSidebar({
         </div>
 
         {/* Section Espaces */}
-        <div className="rounded-xl bg-muted/30 px-3 py-3">
+        <div className="mt-6 rounded-xl bg-muted/30 px-3 py-3">
           <div className="flex items-center justify-between">
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Espaces</p>
             {canCreateClients && (
@@ -277,9 +277,9 @@ export function MainSidebar({
           )}
         </div>
 
-        {/* Parametres - admin only */}
+        {/* Parametres - admin only - pushed to bottom */}
         {isAdmin && (
-          <div className="space-y-1">
+          <div className="mt-auto space-y-1 pt-6">
             <p className="px-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
               Administration
             </p>
