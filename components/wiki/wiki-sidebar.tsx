@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Folder, FileText, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { Sparkles, Folder, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { wikiSections } from '@/lib/wiki-sections';
-import { useNav } from '@/components/navigation';
 import type { FolderWithChildren, DocumentSummary } from '@/lib/actions/documents';
 
 interface WikiSidebarProps {
