@@ -43,7 +43,7 @@ export function MainSidebar({
   canCreateClients
 }: MainSidebarProps) {
   const pathname = usePathname();
-  const { isCompactMode, showSecondary, activePrimaryItem, setActivePrimaryItem } = useNav();
+  const { isCompactMode, showSecondary, activePrimaryItem, setActivePrimaryItem, hideSecondary } = useNav();
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter menu items based on user role
@@ -105,9 +105,10 @@ export function MainSidebar({
     (itemId: string, hasSecondary: boolean) => {
       if (!hasSecondary) {
         setActivePrimaryItem(null);
+        hideSecondary();
       }
     },
-    [setActivePrimaryItem]
+    [setActivePrimaryItem, hideSecondary]
   );
 
   // Render compact mode (< 1520px)

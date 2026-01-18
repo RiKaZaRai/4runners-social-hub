@@ -35,7 +35,6 @@ export function WikiSidebar({
   currentDocId,
 }: WikiSidebarProps) {
   const router = useRouter();
-  const { isCompactMode, isSecondaryPinned, toggleSecondaryPinned, hideSecondary } = useNav();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
 
@@ -50,40 +49,8 @@ export function WikiSidebar({
   };
 
   return (
-    <aside
-      className={cn(
-        'h-screen border-r border-border/50 bg-secondary/60 backdrop-blur-sm',
-        isCompactMode
-          ? 'fixed inset-y-0 left-[72px] z-30 w-[280px] transition-transform duration-200'
-          : 'sticky top-0 w-[280px] shrink-0'
-      )}
-      onMouseLeave={() => {
-        if (isCompactMode && !isSecondaryPinned) {
-          hideSecondary();
-        }
-      }}
-    >
-      {/* Pin button in compact mode */}
-      {isCompactMode && (
-        <button
-          onClick={toggleSecondaryPinned}
-          className={cn(
-            'absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-md border transition',
-            isSecondaryPinned
-              ? 'border-primary/30 bg-primary/10 text-primary'
-              : 'border-border/60 bg-background/50 text-muted-foreground hover:text-foreground'
-          )}
-          title={isSecondaryPinned ? 'Détacher le menu' : 'Épingler le menu'}
-        >
-          {isSecondaryPinned ? (
-            <ChevronLeft className="h-4 w-4" />
-          ) : (
-            <ChevronRightIcon className="h-4 w-4" />
-          )}
-        </button>
-      )}
-      <div className={cn('p-4', isCompactMode && 'pt-10')}>
-        <div className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm">
+    <div className="p-4">
+      <div className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm">
           <button
             onClick={() => router.push(basePath)}
             className="flex w-full items-center gap-2 text-left"
@@ -222,6 +189,6 @@ export function WikiSidebar({
           </div>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
