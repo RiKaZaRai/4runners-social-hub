@@ -24,7 +24,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
         select: { id: true, name: true, modules: true }
       })
     : memberships.map((membership) => membership.tenant);
-  const spacesPreview = tenants.slice(0, 5);
+
+  // Pre-compute modules on server side to avoid passing functions to client
+  const spacesPreview = tenants.slice(0, 5).map((tenant) => ({
+    id: tenant.id,
+    name: tenant.name,
+    modules: normalizeModules(tenant.modules)
+  }));
 
   const userName =
     [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') ||
@@ -38,7 +44,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
       isClient={isClient}
       isAdmin={isAdmin}
       spacesPreview={spacesPreview}
-      normalizeModules={normalizeModules}
       canCreateClients={canCreateClients(currentUser?.role)}
     >
       {children}

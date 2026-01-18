@@ -30,10 +30,8 @@ interface MainSidebarProps {
   spacesPreview: Array<{
     id: string;
     name: string;
-    modules: unknown;
+    modules: string[];
   }>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  normalizeModules: (modules: any) => string[];
   canCreateClients: boolean;
 }
 
@@ -42,11 +40,10 @@ export function MainSidebar({
   isClient,
   isAdmin,
   spacesPreview,
-  normalizeModules,
   canCreateClients
 }: MainSidebarProps) {
   const pathname = usePathname();
-  const { isCompactMode, showSecondary, hideSecondary, activePrimaryItem } = useNav();
+  const { isCompactMode, showSecondary, activePrimaryItem } = useNav();
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter menu items based on user role
@@ -243,8 +240,7 @@ export function MainSidebar({
           </div>
           <ul className="mt-3 space-y-2 text-sm">
             {spacesPreview.map((space) => {
-              const modules = normalizeModules(space.modules);
-              const hasSocial = modules.includes('social');
+              const hasSocial = space.modules.includes('social');
               return (
                 <li key={space.id}>
                   <Link

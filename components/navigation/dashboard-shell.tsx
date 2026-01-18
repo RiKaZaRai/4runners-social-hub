@@ -14,10 +14,8 @@ interface DashboardShellProps {
   spacesPreview: Array<{
     id: string;
     name: string;
-    modules: unknown;
+    modules: string[];
   }>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  normalizeModules: (modules: any) => string[];
   canCreateClients: boolean;
 }
 
@@ -27,7 +25,6 @@ function DashboardContent({
   isClient,
   isAdmin,
   spacesPreview,
-  normalizeModules,
   canCreateClients
 }: DashboardShellProps) {
   const { isCompactMode, isSecondaryVisible, isSecondaryPinned } = useNav();
@@ -53,7 +50,6 @@ function DashboardContent({
         isClient={isClient}
         isAdmin={isAdmin}
         spacesPreview={spacesPreview}
-        normalizeModules={normalizeModules}
         canCreateClients={canCreateClients}
       />
 
