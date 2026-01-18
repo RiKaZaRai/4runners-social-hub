@@ -123,7 +123,6 @@ export function MainSidebar({
             const Icon = item.icon;
             const active = isActive(item.href);
             const hasSecondary = 'hasSecondary' in item && item.hasSecondary;
-            const isHovered = activePrimaryItem === item.id;
 
             return (
               <Link
@@ -134,7 +133,7 @@ export function MainSidebar({
                 onMouseLeave={handleMouseLeave}
                 className={cn(
                   'group flex w-full flex-col items-center gap-1 rounded-xl border px-2 py-2 text-center transition',
-                  active || isHovered
+                  active
                     ? 'border-primary/30 bg-primary/10'
                     : 'border-transparent hover:border-border/60 hover:bg-muted/50'
                 )}
@@ -142,7 +141,7 @@ export function MainSidebar({
                 <Icon
                   className={cn(
                     'h-5 w-5',
-                    active || isHovered
+                    active
                       ? 'text-primary'
                       : 'text-muted-foreground group-hover:text-foreground'
                   )}
@@ -150,7 +149,7 @@ export function MainSidebar({
                 <span
                   className={cn(
                     'text-[10px] leading-tight',
-                    active || isHovered ? 'text-primary font-medium' : 'text-muted-foreground'
+                    active ? 'text-primary font-medium' : 'text-muted-foreground'
                   )}
                 >
                   {item.label}
