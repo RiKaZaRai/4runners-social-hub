@@ -27,21 +27,10 @@ function DashboardContent({
   spacesPreview,
   canCreateClients
 }: DashboardShellProps) {
-  const { isCompactMode, isSecondaryVisible, isSecondaryPinned } = useNav();
+  const { isCompactMode } = useNav();
 
-  // Calculate main content margin based on sidebar states
-  const getMainMargin = () => {
-    if (isCompactMode) {
-      // Compact mode: 72px for main sidebar
-      // Add 280px if secondary is visible AND pinned
-      if (isSecondaryVisible && isSecondaryPinned) {
-        return 'ml-[352px]'; // 72 + 280
-      }
-      return 'ml-[72px]';
-    }
-    // Comfort mode: 256px for main sidebar
-    return 'ml-64';
-  };
+  // Only handle main sidebar margin - secondary sidebar is handled by route layouts
+  const mainMargin = isCompactMode ? 'ml-[72px]' : 'ml-64';
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -53,7 +42,7 @@ function DashboardContent({
         canCreateClients={canCreateClients}
       />
 
-      <div className={`flex min-h-screen flex-1 flex-col transition-[margin] duration-200 ${getMainMargin()}`}>
+      <div className={`flex min-h-screen flex-1 flex-col transition-[margin] duration-200 ${mainMargin}`}>
         <header className="flex items-center justify-between bg-card/80 px-6 py-4">
           <div className="flex items-center gap-3">
             <Input
