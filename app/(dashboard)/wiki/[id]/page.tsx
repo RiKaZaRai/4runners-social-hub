@@ -19,7 +19,7 @@ export default async function WikiDocumentPage({ params }: { params: Promise<{ i
   }
 
   // Verify document exists
-  const document = await prisma.wikiDocument.findUnique({
+  const document = await prisma.document.findUnique({
     where: { id },
     select: { id: true }
   });
