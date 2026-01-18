@@ -47,6 +47,7 @@ interface WikiStructuredProps {
   documents: DocumentFull[];
   basePath: string;
   tenantId?: string | null;
+  initialDocId?: string;
 }
 
 export interface WikiTreeNode {
@@ -195,6 +196,7 @@ export function WikiStructured({
   documents: propDocuments,
   basePath,
   tenantId = null,
+  initialDocId,
 }: WikiStructuredProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -246,6 +248,25 @@ export function WikiStructured({
       router.replace(basePath);
     }
   }, [searchParams, basePath, router]);
+
+  // Set initial document if provided
+  useEffect(() => {
+    if (initialDocId && documents.find((d) => d.id === initialDocId)) {
+      setSelectedDocId(initialDocId);
+      // Expand the folder and section containing this document
+      const doc = documents.find((d) => d.id === initialDocId);
+      if (doc?.folderId) {
+        setExpandedFolders((prev) => ({ ...prev, [doc.folderId!]: true }));
+        const folder = findFolderById(folders, doc.folderId);
+        if (folder) {
+          const section = getFolderSection(folder);
+          if (section) {
+            setExpandedSections((prev) => ({ ...prev, [section.id]: true }));
+          }
+        }
+      }
+    }
+  }, [initialDocId, documents, folders]);
 
   // Build flat index for search
   const index = useMemo(() => buildWikiIndex(folders, documents), [folders, documents]);
