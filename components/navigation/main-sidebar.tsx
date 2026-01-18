@@ -144,7 +144,6 @@ export function MainSidebar({
                 >
                   {item.label}
                 </span>
-                {active && <span className="h-1 w-1 rounded-full bg-primary" />}
               </Link>
             );
           })}
