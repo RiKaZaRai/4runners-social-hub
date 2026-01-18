@@ -35,8 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="flex min-h-screen">
-        <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto bg-secondary/60">
+      <aside className="fixed inset-y-0 left-0 flex w-64 flex-col overflow-y-auto bg-secondary/60">
           <div className="px-5 py-5">
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">4runners</p>
             <h1 className="text-lg font-semibold">Social Hub</h1>
@@ -129,26 +128,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </nav>
         </aside>
 
-        <div className="flex min-h-screen flex-1 flex-col">
-          <header className="flex items-center justify-between bg-card/80 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <Input
-                className="w-[280px] rounded-full bg-background"
-                placeholder="Rechercher..."
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <form action="/api/auth/logout" method="post">
-                <CsrfInput />
-                <Button variant="outline" size="sm">
-                  Se deconnecter
-                </Button>
-              </form>
-            </div>
-          </header>
-          <main className="flex-1 px-6 py-6">{children}</main>
-        </div>
+      <div className="ml-64 flex min-h-screen flex-1 flex-col">
+        <header className="flex items-center justify-between bg-card/80 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Input
+              className="w-[280px] rounded-full bg-background"
+              placeholder="Rechercher..."
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <form action="/api/auth/logout" method="post">
+              <CsrfInput />
+              <Button variant="outline" size="sm">
+                Se deconnecter
+              </Button>
+            </form>
+          </div>
+        </header>
+        <main className="flex-1 px-6 py-6">{children}</main>
       </div>
     </div>
   );
