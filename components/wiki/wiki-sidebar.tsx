@@ -188,6 +188,5 @@ export function WikiSidebar({
           </div>
         </div>
       </div>
-    </div>
   );
 }
