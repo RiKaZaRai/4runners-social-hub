@@ -1,0 +1,90 @@
+'use client';
+
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { CsrfInput } from '@/components/csrf-input';
+import { NavProvider, MainSidebar, useNav } from '@/components/navigation';
+
+interface DashboardShellProps {
+  children: React.ReactNode;
+  userName: string;
+  isClient: boolean;
+  isAdmin: boolean;
+  spacesPreview: Array<{
+    id: string;
+    name: string;
+    modules: unknown;
+  }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  normalizeModules: (modules: any) => string[];
+  canCreateClients: boolean;
+}
+
+function DashboardContent({
+  children,
+  userName,
+  isClient,
+  isAdmin,
+  spacesPreview,
+  normalizeModules,
+  canCreateClients
+}: DashboardShellProps) {
+  const { isCompactMode, isSecondaryVisible, isSecondaryPinned } = useNav();
+
+  // Calculate main content margin based on sidebar states
+  const getMainMargin = () => {
+    if (isCompactMode) {
+      // Compact mode: 72px for main sidebar
+      // Add 280px if secondary is visible AND pinned
+      if (isSecondaryVisible && isSecondaryPinned) {
+        return 'ml-[352px]'; // 72 + 280
+      }
+      return 'ml-[72px]';
+    }
+    // Comfort mode: 256px for main sidebar
+    return 'ml-64';
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <MainSidebar
+        userName={userName}
+        isClient={isClient}
+        isAdmin={isAdmin}
+        spacesPreview={spacesPreview}
+        normalizeModules={normalizeModules}
+        canCreateClients={canCreateClients}
+      />
+
+      <div className={`flex min-h-screen flex-1 flex-col transition-[margin] duration-200 ${getMainMargin()}`}>
+        <header className="flex items-center justify-between bg-card/80 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Input
+              className="w-[280px] rounded-full bg-background"
+              placeholder="Rechercher..."
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <form action="/api/auth/logout" method="post">
+              <CsrfInput />
+              <Button variant="outline" size="sm">
+                Se deconnecter
+              </Button>
+            </form>
+          </div>
+        </header>
+        <main className="flex-1 px-6 py-6">{children}</main>
+      </div>
+    </div>
+  );
+}
+
+export function DashboardShell(props: DashboardShellProps) {
+  return (
+    <NavProvider>
+      <DashboardContent {...props} />
+    </NavProvider>
+  );
+}

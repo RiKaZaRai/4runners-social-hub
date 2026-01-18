@@ -37,6 +37,8 @@ import { NewDocumentDialog } from '@/components/docs/dialogs/document-dialogs';
 import { cn } from '@/lib/utils';
 import { wikiSections } from '@/lib/wiki-sections';
 import { DocContentView } from '@/components/docs/doc-content-view';
+import { useNav } from '@/components/navigation';
+import { ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import type { FolderWithChildren, DocumentFull } from '@/lib/actions/documents';
 import type { JSONContent } from '@tiptap/react';
 
@@ -196,6 +198,7 @@ export function WikiStructured({
 }: WikiStructuredProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isCompactMode, isSecondaryVisible, isSecondaryPinned, activePrimaryItem, toggleSecondaryPinned, hideSecondary } = useNav();
   const [isPending, startTransition] = useTransition();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
@@ -634,15 +637,62 @@ export function WikiStructured({
     });
   };
 
+  // In compact mode, show sidebar if:
+  // - Secondary is pinned, OR
+  // - Secondary is visible from hover AND wiki is the active item
+  const showSidebar = isCompactMode
+    ? (isSecondaryPinned || (isSecondaryVisible && activePrimaryItem === 'wiki'))
+    : true;
+
+  // Grid classes based on mode
+  // In compact mode, sidebar is fixed, so grid is always 1 column
+  // In comfort mode, sidebar is sticky and part of the grid
+  const gridClasses = cn(
+    'grid h-full',
+    isCompactMode ? 'grid-cols-1' : 'grid-cols-[280px_1fr]'
+  );
+
   return (
     <div className="min-h-full text-foreground">
       {/* Gradient background */}
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(900px_520px_at_18%_8%,rgba(59,130,246,0.10),transparent_62%),radial-gradient(780px_460px_at_82%_16%,rgba(139,92,246,0.08),transparent_62%)] bg-background" />
 
-      <div className="grid grid-cols-[280px_1fr] h-full">
+      <div className={gridClasses}>
         {/* SIDEBAR */}
-        <aside className="sticky top-0 h-screen border-r border-border/50 bg-secondary/60 backdrop-blur-sm">
-          <div className="p-4">
+        {showSidebar && (
+        <aside
+          className={cn(
+            'h-screen border-r border-border/50 bg-secondary/60 backdrop-blur-sm',
+            isCompactMode
+              ? 'fixed inset-y-0 left-[72px] z-30 w-[280px] transition-transform duration-200'
+              : 'sticky top-0'
+          )}
+          onMouseLeave={() => {
+            if (isCompactMode && !isSecondaryPinned) {
+              hideSecondary();
+            }
+          }}
+        >
+          {/* Pin button in compact mode */}
+          {isCompactMode && (
+            <button
+              onClick={toggleSecondaryPinned}
+              className={cn(
+                'absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-md border transition',
+                isSecondaryPinned
+                  ? 'border-primary/30 bg-primary/10 text-primary'
+                  : 'border-border/60 bg-background/50 text-muted-foreground hover:text-foreground'
+              )}
+              title={isSecondaryPinned ? 'Détacher le menu' : 'Épingler le menu'}
+            >
+              {isSecondaryPinned ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRightIcon className="h-4 w-4" />
+              )}
+            </button>
+          )}
+          <div className={cn('p-4', isCompactMode && 'pt-10')}>
             <div className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm">
               <div className="flex items-center gap-2">
                 <div className="grid h-9 w-9 place-items-center rounded-xl border border-border/70 bg-background/40">
@@ -758,6 +808,7 @@ export function WikiStructured({
             </div>
           </div>
         </aside>
+        )}
 
         {/* MAIN */}
         <main className="min-w-0">
