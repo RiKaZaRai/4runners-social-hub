@@ -9,7 +9,7 @@ import {
   type ReactNode
 } from 'react';
 
-const COMPACT_BREAKPOINT = 1680;
+const COMPACT_BREAKPOINT = 1760;
 
 interface NavContextType {
   // Mode based on viewport width
