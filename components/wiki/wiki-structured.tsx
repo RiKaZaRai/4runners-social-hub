@@ -639,9 +639,9 @@ export function WikiStructured({
 
   // In compact mode, show sidebar if:
   // - Secondary is pinned, OR
-  // - Secondary is visible from hover AND wiki is the active item
+  // - Secondary is visible from hover
   const showSidebar = isCompactMode
-    ? (isSecondaryPinned || (isSecondaryVisible && activePrimaryItem === 'wiki'))
+    ? (isSecondaryPinned || isSecondaryVisible)
     : true;
 
   // Grid classes based on mode
