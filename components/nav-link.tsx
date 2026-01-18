@@ -34,7 +34,7 @@ export function NavLink({ href, icon, children, exact = false }: NavLinkProps) {
       className={cn(
         'group flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition',
         isActive
-          ? 'border-border bg-primary/10'
+          ? 'border-primary/30 bg-primary/10'
           : 'border-border/60 bg-background/20 hover:bg-muted/50'
       )}
       href={href}

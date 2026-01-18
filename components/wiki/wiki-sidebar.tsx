@@ -86,7 +86,7 @@ export function WikiSidebar({
                     className={cn(
                       'group flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition',
                       isSectionFullyActive
-                        ? 'border-border bg-primary/10'
+                        ? 'border-primary/30 bg-primary/10'
                         : 'border-border/60 bg-background/20 hover:bg-muted/50'
                     )}
                   >
@@ -122,7 +122,7 @@ export function WikiSidebar({
                               className={cn(
                                 'flex w-full items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-sm transition',
                                 isFolderFullyActive
-                                  ? 'border-border bg-primary/10'
+                                  ? 'border-primary/30 bg-primary/10'
                                   : isFolderExpanded
                                     ? 'border-border/60 bg-background/20'
                                     : 'border-transparent hover:border-border/60 hover:bg-muted/50'
@@ -152,7 +152,7 @@ export function WikiSidebar({
                                       className={cn(
                                         'flex w-full items-center gap-2 rounded-xl border px-2 py-1 text-left text-xs transition',
                                         isCurrentDoc
-                                          ? 'border-border bg-primary/10'
+                                          ? 'border-primary/30 bg-primary/10'
                                           : 'border-transparent hover:border-border/60 hover:bg-muted/50'
                                       )}
                                     >
